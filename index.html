@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#333333">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="效率管理">
+  <title>效率管理 - 任务·补品·阅读·健康·复盘·记账</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/inspiration.css">
+</head>
+<body>
+
+  <!-- 手绘贴纸图标精灵（透明背景，供导航 use 引用） -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+      <filter id="stickerShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="2.5" stdDeviation="4" flood-color="#2E2E2E" flood-opacity="0.08"/>
+      </filter>
+    </defs>
+    <symbol id="icon-todo" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <rect x="15" y="13" width="34" height="42" rx="9" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2.5"/>
+        <rect x="25" y="8" width="14" height="11" rx="5.5" fill="#C5D5E8" stroke="#2E2E2E" stroke-width="2.5"/>
+        <g stroke="#D7C9BB" stroke-width="3" stroke-linecap="round">
+          <line x1="27" y1="29" x2="42" y2="29"/>
+          <line x1="27" y1="38" x2="38" y2="38"/>
+          <line x1="27" y1="47" x2="41" y2="47"/>
+        </g>
+        <circle cx="22" cy="29" r="3.2" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2"/>
+        <path d="M20.2 29 l1.4 1.6 2.8 -2.8" fill="none" stroke="#B7A7D6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="22" cy="38" r="3.2" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2"/>
+        <path d="M20.2 38 l1.4 1.6 2.8 -2.8" fill="none" stroke="#B7A7D6" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="22" cy="47" r="3.2" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2"/>
+        <path d="M48 12 l1 3 3 1 -3 1 -1 3 -1 -3 -3 -1 3 -1 z" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="1.6" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+    <symbol id="icon-supplement" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <rect x="18" y="23" width="28" height="34" rx="11" fill="#EAC4D5" stroke="#2E2E2E" stroke-width="2.5"/>
+        <rect x="16" y="13" width="32" height="13" rx="4" fill="#D8CCE6" stroke="#2E2E2E" stroke-width="2.5"/>
+        <rect x="22" y="33" width="20" height="17" rx="4" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2.2"/>
+        <path d="M32 39 q-4 -2 -4 2 q0 4 4 2 q4 2 4 -2 q0 -4 -4 -2" fill="#C8E6D5" stroke="#2E2E2E" stroke-width="1.8" stroke-linejoin="round"/>
+        <ellipse cx="24" cy="29" rx="2" ry="4.5" fill="#FFFFFF" opacity="0.55"/>
+        <path d="M47 16 l0.8 2.4 2.4 0.8 -2.4 0.8 -0.8 2.4 -0.8 -2.4 -2.4 -0.8 2.4 -0.8 z" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="1.4" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+    <symbol id="icon-reading" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <path d="M10 22 q11 -5 21 1 l0 28 q-10 -6 -21 -1 q-2 1 -2 -1 l0 -25 q0 -2 2 -2 z" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M54 22 q-11 -5 -21 1 l0 28 q10 -6 21 -1 q2 1 2 -1 l0 -25 q0 -2 -2 -2 z" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M9 48 q11 -4 22 1 q11 -5 22 -1" fill="none" stroke="#C5D5E8" stroke-width="5" stroke-linecap="round"/>
+        <path d="M9 48 q11 -4 22 1 q11 -5 22 -1" fill="none" stroke="#2E2E2E" stroke-width="2.2" stroke-linecap="round"/>
+        <g stroke="#D7C9BB" stroke-width="2" stroke-linecap="round">
+          <line x1="15" y1="29" x2="26" y2="29"/>
+          <line x1="15" y1="35" x2="24" y2="35"/>
+          <line x1="38" y1="29" x2="49" y2="29"/>
+          <line x1="40" y1="35" x2="49" y2="35"/>
+        </g>
+        <path d="M42 25 l0 19 l4 -4 l4 4 l0 -19 z" fill="#F4D9E0" stroke="#2E2E2E" stroke-width="2" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+    <symbol id="icon-sleep" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <path d="M9 33 q23 -25 46 0" fill="#D8CCE6" stroke="#2E2E2E" stroke-width="2.5" stroke-linecap="round"/>
+        <rect x="15" y="31" width="34" height="27" rx="6" fill="#C5D5E8" stroke="#2E2E2E" stroke-width="2.5"/>
+        <rect x="20" y="35" width="12" height="11" rx="3" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2.2"/>
+        <rect x="22" y="39" width="8" height="4.5" rx="2.2" fill="#F4D9E0" stroke="#2E2E2E" stroke-width="1.8"/>
+        <rect x="36" y="43" width="9" height="15" rx="3" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2.2"/>
+        <path d="M47 11 q5 -4 9 -1 q-5 3 -3 9 q2 1 1 3 q-7 -1 -9 -8 q-1 -2 2 -3 z" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M48 14 q1.5 1 3 0" fill="none" stroke="#2E2E2E" stroke-width="1.4" stroke-linecap="round"/>
+      </g>
+    </symbol>
+    <symbol id="icon-period" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <rect x="11" y="14" width="42" height="42" rx="7" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2.5"/>
+        <path d="M11 21 q0 -7 7 -7 l28 0 q7 0 7 7 l0 6 l-42 0 z" fill="#F4D9E0" stroke="#2E2E2E" stroke-width="2.5" stroke-linejoin="round"/>
+        <circle cx="22" cy="19" r="2.6" fill="#C5D5E8" stroke="#2E2E2E" stroke-width="1.8"/>
+        <circle cx="42" cy="19" r="2.6" fill="#C5D5E8" stroke="#2E2E2E" stroke-width="1.8"/>
+        <g fill="#D7C9BB">
+          <circle cx="20" cy="36" r="1.6"/><circle cx="30" cy="36" r="1.6"/><circle cx="40" cy="36" r="1.6"/>
+          <circle cx="20" cy="45" r="1.6"/><circle cx="30" cy="45" r="1.6"/><circle cx="40" cy="45" r="1.6"/>
+          <circle cx="20" cy="51" r="1.6"/><circle cx="30" cy="51" r="1.6"/><circle cx="40" cy="51" r="1.6"/>
+        </g>
+        <path d="M38 40 q-4 6 0 10 q4 -4 0 -10 z" fill="#EAC4D5" stroke="#2E2E2E" stroke-width="2" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+    <symbol id="icon-poop" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <ellipse cx="32" cy="49" rx="16" ry="9" fill="#E6D5C3" stroke="#2E2E2E" stroke-width="2.5"/>
+        <ellipse cx="32" cy="38" rx="12.5" ry="8" fill="#E6D5C3" stroke="#2E2E2E" stroke-width="2.5"/>
+        <ellipse cx="32" cy="28" rx="8.5" ry="6.5" fill="#E6D5C3" stroke="#2E2E2E" stroke-width="2.5"/>
+        <circle cx="32" cy="21" r="4.5" fill="#E6D5C3" stroke="#2E2E2E" stroke-width="2.5"/>
+        <circle cx="24" cy="36" r="2.2" fill="#F4D9E0" opacity="0.85"/>
+        <circle cx="40" cy="36" r="2.2" fill="#F4D9E0" opacity="0.85"/>
+      </g>
+    </symbol>
+    <symbol id="icon-finance" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <rect x="13" y="15" width="33" height="40" rx="6" fill="#B7A7D6" stroke="#2E2E2E" stroke-width="2.5"/>
+        <rect x="17" y="19" width="25" height="32" rx="3" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2"/>
+        <g fill="none" stroke="#2E2E2E" stroke-width="2">
+          <circle cx="14" cy="24" r="2.4"/><circle cx="14" cy="32" r="2.4"/><circle cx="14" cy="40" r="2.4"/><circle cx="14" cy="48" r="2.4"/>
+        </g>
+        <path d="M18 18 L18 10 Q18 6 22 6 L26 6 Q30 6 30 10 L30 24" fill="none" stroke="#F9E8C7" stroke-width="3.4" stroke-linecap="round"/>
+        <path d="M22 14 L22 24" fill="none" stroke="#F9E8C7" stroke-width="3.4" stroke-linecap="round"/>
+        <circle cx="44" cy="45" r="8" fill="#C8E6D5" stroke="#2E2E2E" stroke-width="2"/>
+        <text x="44" y="48.5" text-anchor="middle" font-size="9" fill="#2E2E2E" font-family="sans-serif" font-weight="bold">¥</text>
+        <path d="M48 12 l0.8 2.4 2.4 0.8 -2.4 0.8 -0.8 2.4 -0.8 -2.4 -2.4 -0.8 2.4 -0.8 z" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="1.4" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+    <symbol id="icon-review" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <rect x="11" y="17" width="31" height="39" rx="6" fill="#C8E6D5" stroke="#2E2E2E" stroke-width="2.5"/>
+        <rect x="15" y="21" width="23" height="31" rx="3" fill="#FFFBF5" stroke="#2E2E2E" stroke-width="2"/>
+        <g fill="none" stroke="#B7A7D6" stroke-width="2.2">
+          <circle cx="12" cy="26" r="2.4"/><circle cx="12" cy="34" r="2.4"/><circle cx="12" cy="42" r="2.4"/><circle cx="12" cy="50" r="2.4"/>
+        </g>
+        <g stroke="#D7C9BB" stroke-width="2" stroke-linecap="round">
+          <line x1="20" y1="29" x2="33" y2="29"/>
+          <line x1="20" y1="36" x2="30" y2="36"/>
+        </g>
+        <g transform="rotate(16 44 33)">
+          <rect x="39" y="11" width="10" height="10" rx="2.5" fill="#F4D9E0" stroke="#2E2E2E" stroke-width="2.2"/>
+          <rect x="39" y="15" width="10" height="38" rx="3" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="2.2"/>
+          <path d="M40 53 l4 8 l4 -8 z" fill="#E6D5C3" stroke="#2E2E2E" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M42 54 l2 4 l-4 0 z" fill="#2E2E2E"/>
+        </g>
+      </g>
+    </symbol>
+    <symbol id="icon-inspiration" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <path d="M18 34 Q14 34 12 38 Q8 38 8 44 Q8 52 16 52 L48 52 Q56 52 56 44 Q56 38 52 38 Q50 34 46 34 Q44 28 38 28 Q34 24 28 28 Q22 28 18 34" fill="#D8CCE6" stroke="#2E2E2E" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M16 34 Q24 26 32 26 Q40 26 48 34" fill="#C5D5E8" stroke="#2E2E2E" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M24 40 Q24 36 28 36 L36 36 Q40 36 40 40" fill="none" stroke="#F4D9E0" stroke-width="2" stroke-linecap="round"/>
+        <line x1="32" y1="36" x2="32" y2="32" stroke="#F4D9E0" stroke-width="2" stroke-linecap="round"/>
+        <rect x="36" y="38" width="6" height="10" rx="1" fill="#EAC4D5" stroke="#2E2E2E" stroke-width="1.5"/>
+        <path d="M14 22 Q15 20 17 22 L18 24 Q19 25 18 26 L16 27 Q15 28 14 27 L12 26 Q11 25 12 24 Z" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M50 18 Q51 16 53 18 L54 20 Q55 21 54 22 L52 23 Q51 24 50 23 L48 22 Q47 21 48 20 Z" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="2" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+    <symbol id="icon-outfit" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <path d="M32 8 Q38 8 38 14 Q38 18 32 18" fill="none" stroke="#F5D0C5" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M16 28 Q32 18 48 28" fill="none" stroke="#F5D0C5" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M20 30 L24 30 L24 46 Q24 52 32 52 Q40 52 40 46 L40 30 L44 30 L40 24 L36 28 L32 24 L28 28 L24 24 Z" fill="#C5D5E8" stroke="#2E2E2E" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M46 36 Q44 34 42 36 Q40 38 42 40 L46 44 L50 40 Q52 38 50 36 Q48 34 46 36" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="2" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+    <symbol id="icon-makeup" viewBox="0 0 64 64">
+      <g filter="url(#stickerShadow)">
+        <rect x="14" y="18" width="14" height="34" rx="3" transform="rotate(-12 21 35)" fill="#F4D9E0" stroke="#2E2E2E" stroke-width="2.5"/>
+        <rect x="30" y="24" width="20" height="34" rx="4" fill="#EAC4D5" stroke="#2E2E2E" stroke-width="2.5"/>
+        <path d="M34 24 L34 16 Q34 12 38 12 L46 14 Q50 16 50 20 L50 24 Z" fill="#D8A0B8" stroke="#2E2E2E" stroke-width="2.5" stroke-linejoin="round"/>
+        <path d="M50 10 Q51 8 53 10 L54 12 Q55 13 54 14 L52 15 Q51 16 50 15 L48 14 Q47 13 48 12 Z" fill="#F9E8C7" stroke="#2E2E2E" stroke-width="2" stroke-linejoin="round"/>
+      </g>
+    </symbol>
+  </svg>
+
+  <!-- 电脑端顶部导航栏 -->
+  <header class="top-nav" id="topNav">
+    <div class="nav-logo">
+      <span class="logo-icon">◈</span>
+      <span class="logo-text">效率管理</span>
+    </div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active" data-module="home"><span class="nav-emoji">🏠</span>首页</button>
+      <button class="nav-tab" data-module="todo"><span class="nav-emoji">📋</span>待办</button>
+      <button class="nav-tab" data-module="supplement"><span class="nav-emoji">💊</span>补品</button>
+      <button class="nav-tab" data-module="reading"><span class="nav-emoji">📚</span>阅读</button>
+      <button class="nav-tab" data-module="health"><span class="nav-emoji">🩺</span>健康</button>
+      <button class="nav-tab" data-module="review"><span class="nav-emoji">📊</span>复盘</button>
+      <button class="nav-tab" data-module="finance"><span class="nav-emoji">💰</span>记账</button>
+      <button class="nav-tab" data-module="inspiration"><span class="nav-emoji">✨</span>灵感</button>
+    </nav>
+    <div class="nav-actions">
+      <button class="nav-icon-btn" id="searchBtn" title="搜索">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <button class="nav-icon-btn" id="exportBtn" title="导出数据">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+      <button class="nav-icon-btn" id="settingsBtn" title="设置">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main id="mainContent" class="main-content">
+    <!-- 首页（卡片式聚合入口） -->
+    <section class="module module-home active" id="homeModule">
+      <!-- 顶部欢迎区域：奶杏柔和底色 + 轻量手绘贴纸装饰 -->
+      <div class="welcome-area">
+        <div class="welcome-deco" aria-hidden="true">
+          <svg class="ws-blob ws1" viewBox="0 0 64 64" width="64" height="64"><circle cx="32" cy="32" r="30" fill="#FBE3C4"/><path d="M20 24 l8 14 14-10" fill="none" stroke="#E9B98A" stroke-width="3" stroke-linecap="round"/></svg>
+          <svg class="ws-blob ws2" viewBox="0 0 64 64" width="56" height="56"><path d="M32 10 l5 14 14 5 -14 5 -5 14 -5-14 -14-5 14-5z" fill="#F6D7E2"/><circle cx="32" cy="32" r="4" fill="#E79BB4"/></svg>
+          <svg class="ws-blob ws3" viewBox="0 0 64 64" width="40" height="40"><path d="M14 40 q16 -28 36 -20 q-6 22 -36 20z" fill="#CFE6D6"/><path d="M44 22 q8 -6 14 2 q-8 6 -14 -2z" fill="#BFE0C8"/></svg>
+        </div>
+        <button class="welcome-settings" onclick="App.switchModule('profile')" aria-label="设置" title="设置">
+          <span class="welcome-settings-emoji">⚙️</span>
+        </button>
+        <h1 class="welcome-title" id="homeGreeting"></h1>
+        <p class="welcome-sub" id="homeDate"></p>
+        <!-- 每日激励语（替换原 Benita 区域，与金句功能合并统一） -->
+        <button class="home-quote" id="quoteBanner" aria-label="今日金句">
+          <span class="qb-emoji">📖</span>
+          <span class="qb-body">
+            <span class="qb-text" id="quoteBannerText">正在为你挑选今日金句…</span>
+            <span class="qb-trans" id="quoteBannerTrans" hidden></span>
+          </span>
+        </button>
+      </div>
+
+      <!-- 2×2 功能卡片网格：健康追踪 / 补品 / 阅读 / 今日宜忌 -->
+      <div class="home-grid-2x2">
+        <!-- 卡片1：健康追踪（睡眠 / 经期 / 噗噗 三合一融合） -->
+        <button class="home-card home-card-health" onclick="App.switchModule('health')" aria-label="健康追踪">
+          <span class="hc-head">
+            <span class="hc-emoji">🩺</span>
+            <span class="hc-title">健康追踪</span>
+          </span>
+          <span class="health-sub-areas">
+            <span class="hs-area hs-sleep" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('sleep')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('sleep')}">
+              <span class="hs-emoji">🛌</span>
+              <span class="hs-val" id="hsSleep">—</span>
+              <span class="hs-label">睡眠</span>
+            </span>
+            <span class="hs-area hs-period" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('period')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('period')}">
+              <span class="hs-emoji">🩸</span>
+              <span class="hs-val" id="hsPeriod">—</span>
+              <span class="hs-label">经期</span>
+            </span>
+            <span class="hs-area hs-bowel" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('bowel')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('bowel')}">
+              <span class="hs-emoji">💩</span>
+              <span class="hs-val" id="hsBowel">—</span>
+              <span class="hs-label">噗噗</span>
+            </span>
+          </span>
+        </button>
+
+        <!-- 卡片2：补品记录 -->
+        <button class="home-card" onclick="App.switchModule('supplement')" aria-label="补品记录">
+          <span class="hc-emoji">💊</span>
+          <span class="hc-body">
+            <span class="hc-title">补品记录</span>
+            <span class="hc-desc">服用打卡 · 查询提醒</span>
+          </span>
+        </button>
+
+        <!-- 卡片3：阅读记录 -->
+        <button class="home-card" onclick="App.switchModule('reading')" aria-label="阅读记录">
+          <span class="hc-emoji">📚</span>
+          <span class="hc-body">
+            <span class="hc-title">阅读记录</span>
+            <span class="hc-desc">计时 · 笔记 · 统计</span>
+          </span>
+        </button>
+
+        <!-- 卡片4：今日宜忌（多重兜底入口：优先 Almanac.open，其次 App.switchModule，避免任何单点缺失导致点击无反应） -->
+        <button class="home-card" onclick="(function(){if(window.Almanac&&Almanac.open){Almanac.open();return;}if(window.App&&App.switchModule)App.switchModule('almanac');})()" aria-label="今日宜忌">
+          <span class="hc-emoji">📅</span>
+          <span class="hc-body">
+            <span class="hc-title">今日宜忌</span>
+            <span class="hc-desc" id="almHomePreview">黄历 · 宜忌 · 方位</span>
+          </span>
+        </button>
+      </div>
+      <!-- 更多模块即将上线（保留提示文字） -->
+      <div class="home-more-hint">（更多模块即将上线 ✨）</div>
+    </section>
+
+    <!-- 今日宜忌模块 -->
+    <section id="almanacModule" class="module">
+      <header class="alm-head">
+        <button onclick="App.switchModule('home')" title="返回" aria-label="返回">←</button>
+        <span class="alm-head-title">📅 今日宜忌</span>
+        <button class="alm-cal-btn" title="选择日期" aria-label="选择日期" onclick="document.getElementById('almDateInput').click()">📅</button>
+        <input type="date" id="almDateInput" min="2020-01-01" max="2035-12-31" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;" />
+      </header>
+      <div class="alm-body" id="almBody">
+        <div class="alm-date" id="almDate"></div>
+        <div class="alm-zodiac" id="almZodiac"></div>
+        <div class="alm-cols">
+          <div class="alm-col alm-yi-col">
+            <div class="alm-col-title alm-yi-title">宜 ❤️</div>
+            <ul class="alm-list" id="almYi"></ul>
+          </div>
+          <div class="alm-col alm-ji-col">
+            <div class="alm-col-title alm-ji-title">忌 💔</div>
+            <ul class="alm-list" id="almJi"></ul>
+          </div>
+        </div>
+        <div class="alm-card">
+          <div class="alm-card-title">🧭 今日方位</div>
+          <div class="alm-card-text" id="almDirs"></div>
+        </div>
+        <div class="alm-card">
+          <div class="alm-card-title">🎨 今日五行穿衣</div>
+          <div class="alm-card-text alm-wuxing" id="almWuxing"></div>
+        </div>
+        <div class="alm-card">
+          <div class="alm-card-title">💡 今日小贴士</div>
+          <div class="alm-card-text alm-tip" id="almTip"></div>
+        </div>
+        <div class="alm-card">
+          <div class="alm-card-title">⏰ 今日吉时</div>
+          <div class="alm-card-text" id="almHours"></div>
+        </div>
+        <div class="alm-card">
+          <div class="alm-card-title">📖 每日一句</div>
+          <div class="alm-card-text alm-quote" id="almQuote"></div>
+        </div>
+        <div class="alm-card">
+          <div class="alm-card-title">📅 本月日历</div>
+          <div class="alm-cal">
+            <div class="alm-cal-head">
+              <button onclick="Almanac.shiftMonth(-1)" aria-label="上个月">‹</button>
+              <span id="almCalTitle"></span>
+              <button onclick="Almanac.shiftMonth(1)" aria-label="下个月">›</button>
+            </div>
+            <div class="alm-cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
+            <div class="alm-cal-grid" id="almCalGrid"></div>
+          </div>
+        </div>
+        <div class="alm-detail">
+          <div class="alm-detail-title">── 今日宜忌详解 ──</div>
+          <div id="almDetail"></div>
+        </div>
+        <div class="alm-actions">
+          <button class="alm-act-btn" onclick="App.switchModule('auspicious')">🔍 吉日查询</button>
+          <button class="alm-act-btn alm-act-share" onclick="Almanac.share()">📤 分享今日宜忌</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 吉日查询模块 -->
+    <section id="auspiciousModule" class="module">
+      <header class="alm-head">
+        <button onclick="App.switchModule('almanac')" title="返回" aria-label="返回">←</button>
+        <span class="alm-head-title">🔍 吉日查询</span>
+        <button class="alm-cal-btn" title="回到今日宜忌" aria-label="回到今日宜忌" onclick="App.switchModule('almanac')">📅</button>
+      </header>
+      <div class="aus-body" id="ausBody">
+        <div class="aus-card">
+          <div class="aus-card-title">🔍 搜索吉日</div>
+          <input type="text" id="ausKeyword" class="aus-input" placeholder="输入关键词，如 订婚 / 安床 / 上梁" />
+          <div class="aus-scenes" id="ausScenes"></div>
+        </div>
+        <div class="aus-card">
+          <div class="aus-card-title">📅 查询时间范围</div>
+          <div class="aus-range">
+            <label>从 <input type="date" id="ausFrom" class="aus-date" /></label>
+            <label>至 <input type="date" id="ausTo" class="aus-date" /></label>
+          </div>
+          <div class="aus-quick">
+            <button data-range="1">本月</button><button data-range="2">下月</button>
+            <button data-range="3">三个月</button><button data-range="6">半年</button>
+          </div>
+        </div>
+        <div class="aus-card">
+          <div class="aus-card-title aus-toggle" id="ausAdvToggle">⚙️ 高级筛选 <span class="aus-chev">▸</span></div>
+          <div class="aus-adv" id="ausAdv" style="display:none;">
+            <label class="aus-field">避开冲煞生肖：
+              <select id="ausAvoidZodiac">
+                <option value="">不限制</option>
+                <option>鼠</option><option>牛</option><option>虎</option><option>兔</option>
+                <option>龙</option><option>蛇</option><option>马</option><option>羊</option>
+                <option>猴</option><option>鸡</option><option>狗</option><option>猪</option>
+              </select>
+            </label>
+            <label class="aus-check"><input type="checkbox" id="ausOnlyHuang" /> 仅选黄道吉日</label>
+            <label class="aus-check"><input type="checkbox" id="ausAvoidYang" /> 避开杨公忌日</label>
+            <label class="aus-field">吉神数量 ≥
+              <select id="ausMinJi"><option value="0">不限</option><option value="2">2 位</option><option value="3">3 位</option><option value="4">4 位</option></select>
+            </label>
+          </div>
+        </div>
+        <button class="aus-search-btn" id="ausSearch">🔍 查询吉日</button>
+        <div class="aus-result-head" id="ausResultHead"></div>
+        <div class="aus-list" id="ausList"></div>
+        <div class="aus-empty" id="ausEmpty" style="display:none;">这个时间段没有找到合适的吉日，试试扩大搜索范围吧 ✨</div>
+        <button class="aus-more" id="ausMore" style="display:none;">加载更多 ↓</button>
+      </div>
+    </section>
+
+    <!-- 吉日详情（抽屉式覆盖） -->
+    <section id="auspiciousDetail" class="aus-detail-overlay" style="display:none;">
+      <div class="aus-detail-card" id="ausDetailCard"></div>
+    </section>
+
+    <!-- 待办模块 -->
+    <section class="module module-todo" id="todoModule"></section>
+    <!-- 补品打卡模块 -->
+    <section class="module module-supplement" id="supplementModule"></section>
+    <!-- 每日阅读模块 -->
+    <section class="module module-reading" id="readingModule"></section>
+    <!-- 健康生活模块 -->
+    <section class="module module-health" id="healthModule"></section>
+    <!-- 复盘模块 -->
+    <section class="module module-review" id="reviewModule"></section>
+    <!-- 记账模块 -->
+    <section class="module module-finance" id="financeModule"></section>
+    <!-- 个人中心 -->
+    <section class="module module-profile" id="profileModule"></section>
+    <!-- 灵感专区（独立模块，挂载为第 8 个 tab；故障不影响其他模块） -->
+    <section class="module module-inspiration" id="inspirationModule">
+      <div class="insp-app">
+        <header class="insp-header">
+          <button class="insp-home" id="inspHome" title="返回主程序">←</button>
+          <h1>✨ 灵感专区</h1>
+          <div class="insp-header-actions">
+            <button id="inspSearchCurrent" title="搜索">🔍</button>
+            <button id="inspMore" title="更多">⋯</button>
+          </div>
+          <div class="insp-more-menu" id="inspMoreMenu" hidden>
+            <button id="exportMenuItem">⬇ 导出备份</button>
+            <button id="importMenuItem">⬆ 导入备份</button>
+            <button id="trashMenuItem">🗑 回收站</button>
+          </div>
+        </header>
+
+        <div class="insp-cat-bar" id="inspCatBar"></div>
+        <div class="insp-tag-bar" id="inspTagBar"></div>
+
+        <div class="insp-searchbar" id="inspSearchbar" hidden>
+          <input id="inspSearchInput" placeholder="搜索标题、内容、标签…">
+          <button id="inspSearchClose">取消</button>
+        </div>
+
+        <main class="insp-main" id="inspMain">
+          <div class="insp-waterfall" id="inspWaterfall"></div>
+          <div class="insp-empty" id="inspEmpty" hidden>这里存放你的穿搭、妆容灵感，<br>点击右下角加号开始记录 ✨</div>
+        </main>
+
+        <button class="insp-fab" id="inspFab" title="新建笔记">＋</button>
+      </div>
+
+      <!-- 新建 / 编辑 弹窗 -->
+      <div class="insp-modal" id="noteModal" hidden>
+        <div class="insp-modal-card">
+          <div class="insp-modal-head">
+            <button id="noteModalClose" title="关闭">✕</button>
+            <span id="noteModalTitle">新建灵感笔记</span>
+            <span style="width:28px"></span>
+          </div>
+          <div class="insp-modal-body">
+            <div class="insp-uploader">
+              <div class="insp-thumbs" id="noteThumbs"></div>
+              <label class="insp-add-thumb">
+                <input type="file" accept="image/*" multiple id="noteImgInput" hidden>
+                ＋ 图片
+              </label>
+            </div>
+            <div class="insp-field">
+              <input class="insp-input" id="noteTitle" maxlength="30" placeholder="添加标题（选填）">
+              <span class="insp-count" id="noteTitleCount">0/30</span>
+            </div>
+            <div class="insp-field">
+              <textarea class="insp-textarea" id="noteBody" maxlength="500" placeholder="记录你的灵感碎片 ✨"></textarea>
+              <span class="insp-count insp-count-area" id="noteBodyCount">0/500</span>
+            </div>
+            <div class="insp-cat">
+              <span class="insp-label">分类（必选）</span>
+              <div class="insp-cat-options" id="noteCatOptions"></div>
+            </div>
+            <div class="insp-tags">
+              <span class="insp-label">标签（选填，回车或点添加）</span>
+              <div class="insp-tag-presets" id="noteTagPresets"></div>
+              <div class="insp-tag-chips" id="noteTagChips"></div>
+              <div class="insp-tag-add">
+                <input id="noteTagInput" placeholder="如 通勤 / 约会 / 黄皮">
+                <button class="insp-btn-primary" id="noteTagAdd" style="flex:0 0 auto;padding:9px 16px;font-size:14px">添加</button>
+              </div>
+            </div>
+          <div class="insp-modal-foot">
+            <button class="insp-btn-ghost" id="noteSaveDraft">存草稿</button>
+            <button class="insp-btn-primary" id="notePublish">添加</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 详情页 -->
+      <div class="insp-detail" id="detailView" hidden>
+        <div class="insp-detail-head">
+          <button id="detailClose" title="返回">←</button>
+          <span>灵感详情</span>
+          <button id="detailMore" title="更多">···</button>
+        </div>
+        <div class="insp-detail-body" id="detailBody"></div>
+        <div class="insp-more-menu" id="detailMoreMenu" hidden>
+          <button id="detailEdit">✏️ 编辑</button>
+          <button id="detailDelete">🗑 删除</button>
+          <button id="detailCancel" class="insp-menu-cancel">取消</button>
+        </div>
+      </div>
+
+      <!-- 标签筛选弹窗 -->
+      <div class="insp-modal" id="tagModal" hidden>
+        <div class="insp-modal-card">
+          <div class="insp-modal-head">
+            <button id="tagModalClose" title="关闭">✕</button>
+            <span>按标签筛选</span>
+            <span style="width:28px"></span>
+          </div>
+          <div class="insp-modal-body">
+            <div class="insp-tag-list" id="tagModalList"></div>
+          <div class="insp-modal-foot">
+            <button class="insp-btn-primary" id="tagModalDone">完成</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分类管理 -->
+      <div class="insp-modal" id="catManageModal" hidden>
+        <div class="insp-modal-card">
+          <div class="insp-modal-head">
+            <button id="catManageClose" title="关闭">✕</button>
+            <span>分类管理</span>
+            <span style="width:28px"></span>
+          </div>
+          <div class="insp-modal-body">
+            <div class="insp-cat-list" id="catManageList"></div>
+            <button class="insp-cat-add" id="catManageAdd">＋ 新建分类</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 新建 / 编辑分类 -->
+      <div class="insp-modal" id="catEditModal" hidden>
+        <div class="insp-modal-card">
+          <div class="insp-modal-head">
+            <button id="catEditClose" title="关闭">✕</button>
+            <span id="catEditTitle">新建分类</span>
+            <span style="width:28px"></span>
+          </div>
+          <div class="insp-modal-body">
+            <span class="insp-label">分类名称</span>
+            <input class="insp-input" id="catEditName" maxlength="12" placeholder="如 家居灵感、旅行记录" style="margin-bottom:16px">
+            <span class="insp-label">选择图标（Apple Emoji）</span>
+            <div class="insp-emoji-grid" id="catEditEmojiGrid"></div>
+          </div>
+          <div class="insp-modal-foot">
+            <button class="insp-btn-primary" id="catEditSave">创建</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 回收站 -->
+      <div class="insp-trash" id="trashView" hidden>
+        <div>
+          <div class="insp-detail-head">
+            <button id="trashClose" title="返回">←</button>
+            <span>回收站（30 天内可恢复）</span>
+            <span style="width:28px"></span>
+          </div>
+          <div class="insp-trash-list" id="trashList"></div>
+        </div>
+      </div>
+
+      <!-- 灯箱 -->
+      <div class="insp-lightbox" id="lightbox" hidden>
+        <button id="lightboxClose" title="关闭">✕</button>
+        <img id="lightboxImg" alt="">
+        <button id="lightboxPrev" title="上一张">‹</button>
+        <button id="lightboxNext" title="下一张">›</button>
+      </div>
+
+      <!-- 通用确认框 -->
+      <div class="insp-modal" id="confirmModal" hidden>
+        <div class="insp-confirm-card">
+          <p id="confirmMsg"></p>
+          <p id="confirmSub" class="insp-confirm-sub" hidden></p>
+          <div class="insp-confirm-actions">
+            <button class="insp-btn-ghost" id="confirmCancel">取消</button>
+            <button class="insp-btn-primary" id="confirmOk">确定</button>
+          </div>
+        </div>
+      </div>
+
+      <input type="file" id="importFile" accept="application/json" hidden>
+      <div class="insp-toast" id="inspToast" hidden></div>
+    </section>
+
+  <!-- 今日金句弹窗 -->
+  <div class="quote-modal-overlay" id="quoteModal" hidden>
+    <div class="modal quote-modal-card">
+      <div class="quote-modal-head">
+        <span>📖 今日金句</span>
+        <button class="modal-close" onclick="QuoteUI.close()">✕</button>
+      </div>
+      <div class="quote-modal-body">
+        <p class="quote-text" id="quoteModalText"></p>
+        <p class="quote-author" id="quoteModalAuthor"></p>
+      </div>
+      <div class="quote-modal-actions">
+        <button class="btn btn-secondary" id="quoteFavBtn" onclick="QuoteUI.toggleFav()">☆ 收藏</button>
+        <button class="btn btn-primary" id="quoteNextBtn" onclick="QuoteUI.next()">换一句</button>
+      </div>
+      <div class="quote-favs">
+        <button class="link-btn" id="quoteFavListBtn" onclick="QuoteUI.toggleFavList()">查看收藏（0）</button>
+        <div class="quote-fav-list" id="quoteFavList" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  </main>
+
+  <!-- 手机端底部导航（精简为 4 个 tab） -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-tab active" data-module="home">
+      <span class="tab-emoji">🏠</span>
+      <span class="tab-label">首页</span>
+    </button>
+    <button class="bottom-tab" data-module="review">
+      <span class="tab-emoji">📊</span>
+      <span class="tab-label">复盘中心</span>
+    </button>
+    <button class="bottom-tab" data-module="inspiration">
+      <span class="tab-emoji">✨</span>
+      <span class="tab-label">灵感</span>
+    </button>
+    <button class="bottom-tab" data-module="profile">
+      <span class="tab-emoji">⚙️</span>
+      <span class="tab-label">我的</span>
+    </button>
+  </nav>
+
+  <!-- 悬浮按钮 -->
+  <button class="fab" id="fab" style="display:none">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+
+  <!-- 弹窗容器 -->
+  <div class="modal-overlay" id="modalOverlay"></div>
+
+  <!-- Toast 容器 -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- 同步状态指示器 -->
+  <div class="sync-status" id="syncStatus">
+    <span class="sync-dot"></span>
+    <span class="sync-text">已同步</span>
+  </div>
+
+  <script src="js/storage.js"></script>
+  <script src="js/quotes.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/inspiration-db.js"></script>
+  <script src="js/inspiration.js"></script>
+  <script>
+    // 集成模式：灵感专区的「返回主程序」改为切回首页 tab（不刷新页面），复用平台原有 tab 导航
+    window.addEventListener('DOMContentLoaded', function () {
+      var h = document.getElementById('inspHome');
+      if (h) {
+        h.onclick = function () {
+          var t = document.querySelector('.bottom-tab[data-module="home"]') || document.querySelector('.nav-tab[data-module="home"]');
+          if (t) t.click(); else location.href = 'index.html';
+        };
+      }
+    });
+  </script>
+  <script>
+    // 首页欢迎语：按当前时段给出问候（一处随手的小巧思）
+    (function () {
+      var el = document.getElementById('homeGreeting');
+      if (!el) return;
+      var h = new Date().getHours();
+      var greet = '晚上好';
+      if (h < 5) greet = '夜深了';
+      else if (h < 11) greet = '早上好';
+      else if (h < 13) greet = '中午好';
+      else if (h < 18) greet = '下午好';
+      el.textContent = greet + '，今天也辛苦啦 🌿 慢慢来，一件件完成就好';
+    })();
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          // 检测到新版本自动接管，下次刷新即生效
+          reg.addEventListener('updatefound', () => {
+            const nw = reg.installing;
+            if (nw) {
+              nw.addEventListener('statechange', () => {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  // 新版本已就绪，静默通知（不影响当前操作，刷新后生效）
+                  console.log('[SW] 新版本已就绪，刷新后生效');
+                }
+              });
+            }
+          });
+        }).catch(err => console.log('SW注册失败:', err));
+
+        // 新 SW 接管后自动刷新一次，确保热更新生效
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            try { sessionStorage.setItem('sw_updated', '1'); } catch (e) {}
+            window.location.reload();
+          }
+        });
+      });
+    }
+  </script>
+
+  <!-- 今日宜忌：黄历数据（cnlunar 预计算，离线查表）+ 模块逻辑 -->
+  <script src="almanac-data.js" defer></script>
+  <script src="js/almanac.js" defer></script>
+  <script src="js/auspicious.js" defer></script>
+  <script>
+    function openAlmanac() {
+      if (window.Almanac) Almanac.open();
+      else if (window.App) App.switchModule('almanac');
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+      // 首页卡片预览：今日宜忌简短摘要
+      var pv = document.getElementById('almHomePreview');
+      if (pv && window.Almanac) pv.textContent = Almanac.todayPreview();
+      // 顶部日期按钮 → 原生日期选择器（快速跳转任意日期）
+      var di = document.getElementById('almDateInput');
+      if (di) di.addEventListener('change', function () {
+        if (this.value && window.Almanac) Almanac.goDate(this.value);
+      });
+      // 移动端交互：右滑返回首页 + 顶部下拉刷新当日数据
+      var body = document.getElementById('almBody');
+      if (body) {
+        var sx = 0, sy = 0, tracking = false;
+        body.addEventListener('touchstart', function (e) {
+          if (e.touches.length !== 1) return;
+          sx = e.touches[0].clientX; sy = e.touches[0].clientY; tracking = true;
+        }, { passive: true });
+        body.addEventListener('touchend', function (e) {
+          if (!tracking) return; tracking = false;
+          var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+          if (Math.abs(dx) > Math.abs(dy) && dx > 70 && sx < 60) {
+            if (window.App) App.switchModule('home');
+          } else if (dy > 70 && Math.abs(dx) < 40 && body.scrollTop <= 0) {
+            if (window.Almanac) Almanac.render();
+            if (window.App && App.toast) App.toast('已刷新当日黄历 🔄');
+          }
+        }, { passive: true });
+      }
+    });
+  </script>
+</body>
+</html>

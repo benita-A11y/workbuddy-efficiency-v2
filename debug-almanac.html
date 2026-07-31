@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>今日宜忌 · 入口诊断</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+  body { margin: 0; background: #f3f1ec; font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #5a5a5a; }
+  .diag { max-width: 640px; margin: 0 auto; padding: 24px 16px 60px; }
+  .diag h1 { font-size: 20px; color: #6b7f9e; }
+  .diag .sub { font-size: 13px; color: #999; margin-bottom: 16px; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; margin: 8px 0; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .row .ic { font-size: 18px; }
+  .row .ok { color: #3a9b6e; }
+  .row .bad { color: #c0584b; }
+  .row .k { font-weight: 600; flex: 0 0 200px; }
+  .row .v { color: #888; font-size: 13px; word-break: break-all; }
+  .btn { display: block; width: 100%; padding: 14px; margin: 18px 0 8px; border: none; border-radius: 14px; background: #B8C5D6; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .btn:active { transform: scale(.98); }
+  .conclusion { margin-top: 18px; padding: 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
+  .c-good { background: #e7f3ec; color: #2f7d57; }
+  .c-bad { background: #fbeaea; color: #b1453a; }
+  .tip { font-size: 12px; color: #999; margin-top: 14px; line-height: 1.6; }
+  code { background: #eee; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="diag">
+  <h1>🔍 今日宜忌入口诊断</h1>
+  <div class="sub">本页用于确认「首页今日宜忌卡片 → 详情页」的点击链路是否正常。打开后自动检测，也可手动点按钮模拟。</div>
+  <div id="log"></div>
+  <button class="btn" id="testClick">▶ 模拟点击首页「今日宜忌」卡片</button>
+  <div id="conclusion"></div>
+  <div class="tip">
+    如果本页自动检测全部为 ✅，但仍然点不进「首页」的卡片：说明你浏览器开着<strong>旧的 Service Worker 缓存</strong>或看的是别的网址。<br>
+    解决办法：① 用<strong>无痕/隐私窗口</strong>打开预览地址；② 或在地址栏点 🔒 → 删除/忽略站点数据 → 刷新；③ 或直接用本页的「模拟点击」按钮（它和首页卡片调用的是同一套逻辑）。
+  </div>
+</div>
+
+<script src="almanac-data.js" defer></script>
+<script src="js/app.js" defer></script>
+<script src="js/almanac.js" defer></script>
+<script src="js/auspicious.js" defer></script>
+<script>
+function row(k, ok, v) {
+  var d = document.createElement('div');
+  d.className = 'row';
+  d.innerHTML = '<span class="ic ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✅' : '❌') + '</span>' +
+    '<span class="k">' + k + '</span><span class="v">' + (v === undefined ? '' : v) + '</span>';
+  document.getElementById('log').appendChild(d);
+  return ok;
+}
+function diag() {
+  document.getElementById('log').innerHTML = '';
+  var allOk = true;
+  allOk = row('App 已加载', typeof App !== 'undefined', typeof App) && allOk;
+  allOk = row('App.openAlmanac 是函数', !!(window.App && App.openAlmanac), typeof (window.App && App.openAlmanac)) && allOk;
+  allOk = row('Almanac 已加载', typeof Almanac !== 'undefined', typeof Almanac) && allOk;
+  allOk = row('Almanac.open 是函数', !!(window.Almanac && Almanac.open), typeof (window.Almanac && Almanac.open)) && allOk;
+  var rawCnt = (typeof ALMANAC_RAW !== 'undefined') ? Object.keys(ALMANAC_RAW).length : 0;
+  allOk = row('黄历数据 ALMANAC_RAW 已加载', rawCnt > 0, '共 ' + rawCnt + ' 天') && allOk;
+  // 模拟点击
+  var clickOk = true, errMsg = '';
+  try {
+    if (window.Almanac && Almanac.open) Almanac.open();
+    else if (window.App && App.switchModule) App.switchModule('almanac');
+    var mod = document.getElementById('almanacModule');
+    var active = !!(mod && mod.classList.contains('active'));
+    clickOk = active;
+    allOk = row('点击后 almanacModule 被激活', active) && allOk;
+    var yi = document.querySelectorAll('#almYi li').length;
+    var ji = document.querySelectorAll('#almJi li').length;
+    var dt = (document.getElementById('almDate') || {}).textContent || '';
+    allOk = row('宜忌内容已渲染', yi > 0 && ji > 0, '宜 ' + yi + ' 项 / 忌 ' + ji + ' 项 / 日期：' + dt) && allOk;
+  } catch (e) {
+    clickOk = false; errMsg = e.message;
+    allOk = row('点击时抛出异常', false, e.message) && allOk;
+  }
+  var c = document.getElementById('conclusion');
+  if (allOk) {
+    c.className = 'conclusion c-good';
+    c.innerHTML = '🎉 <b>全部正常！</b>「今日宜忌」入口链路完好。如果你在首页还是点不进去，几乎可以确定是浏览器旧 Service Worker 缓存或看错了网址——请用无痕窗口打开预览地址，或点上面的「模拟点击」按钮即可看到详情页。';
+  } else {
+    c.className = 'conclusion c-bad';
+    c.innerHTML = '⚠️ <b>检测到链路断点</b>（见上方 ❌ 项）。错误信息：' + (errMsg || '部分依赖未加载') + '。请把本页截图发我，我据此定位。';
+  }
+}
+window.addEventListener('load', diag);
+document.getElementById('testClick').addEventListener('click', function () {
+  diag();
+  document.getElementById('almanacModule').scrollIntoView({ behavior: 'smooth' });
+});
+</script>
+</body>
+</html>

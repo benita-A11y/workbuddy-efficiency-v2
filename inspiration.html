@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#B7A7D6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="灵感专区">
+  <title>灵感专区 · 穿搭妆容私人收藏</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/inspiration.css">
+</head>
+<body>
+  <div class="insp-app">
+    <header class="insp-header">
+      <button class="insp-home" id="inspHome" title="返回主程序">←</button>
+      <h1>✨ 灵感专区</h1>
+      <div class="insp-header-actions">
+        <button id="inspSearchBtn" title="搜索">🔍</button>
+        <button id="inspBackupBtn" title="备份">⤓</button>
+        <button id="inspTrashBtn" title="回收站">🗑</button>
+      </div>
+      <div class="insp-backup-menu" id="inspBackupMenu" hidden>
+        <button id="exportBtn2">⬇ 导出备份</button>
+        <button id="importBtn2">⬆ 导入备份</button>
+      </div>
+    </header>
+
+    <div class="insp-tabs" id="inspTabs">
+      <button class="insp-tab active" data-cat="all">全部</button>
+      <button class="insp-tab" data-cat="outfit">穿搭灵感</button>
+      <button class="insp-tab" data-cat="makeup">妆容灵感</button>
+      <button class="insp-tab insp-tab-filter" data-cat="__filter"># 标签</button>
+    </div>
+
+    <div class="insp-searchbar" id="inspSearchbar" hidden>
+      <input id="inspSearchInput" placeholder="搜索标题、内容、标签…">
+      <button id="inspSearchClose">取消</button>
+    </div>
+
+    <main class="insp-main" id="inspMain">
+      <div class="insp-waterfall" id="inspWaterfall"></div>
+      <div class="insp-empty" id="inspEmpty" hidden>这里存放你的穿搭、妆容灵感，<br>点击右下角加号开始记录 ✨</div>
+    </main>
+
+    <button class="insp-fab" id="inspFab" title="新建笔记">＋</button>
+  </div>
+
+  <!-- 新建 / 编辑 弹窗 -->
+  <div class="insp-modal" id="noteModal" hidden>
+    <div class="insp-modal-card">
+      <div class="insp-modal-head">
+        <button id="noteModalClose" title="关闭">✕</button>
+        <span id="noteModalTitle">新建灵感笔记</span>
+        <span style="width:28px"></span>
+      </div>
+      <div class="insp-modal-body">
+        <div class="insp-uploader">
+          <div class="insp-thumbs" id="noteThumbs"></div>
+          <label class="insp-add-thumb">
+            <input type="file" accept="image/*" multiple id="noteImgInput" hidden>
+            ＋ 图片
+          </label>
+        </div>
+        <input class="insp-input" id="noteTitle" placeholder="标题（选填）">
+        <textarea class="insp-textarea" id="noteBody" placeholder="记录搭配思路、妆容心得、色号、场景、季节、购买链接…"></textarea>
+        <div class="insp-cat">
+          <span class="insp-label">分类（必选）</span>
+          <div class="insp-cat-options">
+            <label><input type="radio" name="noteCat" value="outfit"> 👗 穿搭灵感</label>
+            <label><input type="radio" name="noteCat" value="makeup"> 💄 妆容灵感</label>
+          </div>
+        </div>
+        <div class="insp-tags">
+          <span class="insp-label">标签（可添加多个，如 通勤 / 约会 / 黄皮）</span>
+          <div class="insp-tag-chips" id="noteTagChips"></div>
+          <div class="insp-tag-add">
+            <input id="noteTagInput" placeholder="输入标签后回车或点添加">
+            <button class="insp-btn-primary" id="noteTagAddBtn" style="flex:0 0 auto;padding:9px 16px;font-size:14px">添加</button>
+          </div>
+        </div>
+      </div>
+      <div class="insp-modal-foot">
+        <button class="insp-btn-ghost" id="noteSaveDraft">存草稿</button>
+        <button class="insp-btn-primary" id="notePublish">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 详情页 -->
+  <div class="insp-detail" id="detailView" hidden>
+    <div class="insp-detail-head">
+      <button id="detailClose" title="返回">←</button>
+      <span>笔记详情</span>
+      <button id="detailMore" title="更多">···</button>
+    </div>
+    <div class="insp-detail-body" id="detailBody"></div>
+    <div class="insp-more-menu" id="detailMoreMenu" hidden>
+      <button id="detailEdit">✏️ 编辑笔记</button>
+      <button id="detailCopy">📋 复制全部文字</button>
+      <button id="detailDelete">🗑 删除笔记</button>
+    </div>
+  </div>
+
+  <!-- 标签筛选弹窗 -->
+  <div class="insp-modal" id="tagModal" hidden>
+    <div class="insp-modal-card">
+      <div class="insp-modal-head">
+        <button id="tagModalClose" title="关闭">✕</button>
+        <span>按标签筛选</span>
+        <span style="width:28px"></span>
+      </div>
+      <div class="insp-modal-body">
+        <div class="insp-tag-list" id="tagModalList"></div>
+      </div>
+      <div class="insp-modal-foot">
+        <button class="insp-btn-primary" id="tagModalDone">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 回收站 -->
+  <div class="insp-trash" id="trashView" hidden>
+    <div>
+      <div class="insp-detail-head">
+        <button id="trashClose" title="返回">←</button>
+        <span>回收站（30 天内可恢复）</span>
+        <span style="width:28px"></span>
+      </div>
+      <div class="insp-trash-list" id="trashList"></div>
+    </div>
+  </div>
+
+  <!-- 灯箱 -->
+  <div class="insp-lightbox" id="lightbox" hidden>
+    <button id="lightboxClose" title="关闭">✕</button>
+    <img id="lightboxImg" alt="">
+    <button id="lightboxPrev" title="上一张">‹</button>
+    <button id="lightboxNext" title="下一张">›</button>
+  </div>
+
+  <!-- 通用确认框 -->
+  <div class="insp-modal" id="confirmModal" hidden>
+    <div class="insp-confirm-card">
+      <p id="confirmMsg"></p>
+      <div class="insp-confirm-actions">
+        <button class="insp-btn-ghost" id="confirmCancel">取消</button>
+        <button class="insp-btn-primary" id="confirmOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="importFile" accept="application/json" hidden>
+  <div class="insp-toast" id="inspToast" hidden></div>
+
+  <script src="js/inspiration-db.js"></script>
+  <script src="js/inspiration.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(function (e) { console.warn('SW 注册失败', e); });
+    }
+  </script>
+</body>
+</html>
