@@ -1,7 +1,7 @@
-// Service Worker - 离线优先但导航走网络优先（v25：根治「旧缓存 index.html 导致今日宜忌点不进去」）
+// Service Worker - 离线优先但导航走网络优先（v26：入口改为自包含多层兜底，不依赖 App 也能跳今日宜忌详情页）
 // 核心修复：对 index.html 等导航请求采用 NETWORK-FIRST，保证用户永远拿到最新 HTML；
 // 其它静态资源（css/js/data/图标）仍 cache-first + 后台更新，保证离线可用与加载速度。
-const CACHE_NAME = 'efficiency-app-v25';
+const CACHE_NAME = 'efficiency-app-v26';
 const ASSETS = [
   './',
   './index.html',

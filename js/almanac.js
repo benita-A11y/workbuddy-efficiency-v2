@@ -397,12 +397,24 @@
     renderCalendar();
   }
 
+  // 显示模块：优先 App.switchModule；若 App 未就绪（初始化异常等），直接操作 DOM 显示，保证详情页一定能跳出来
+  function showModule() {
+    var m = document.getElementById('almanacModule');
+    if (window.App && App.switchModule) {
+      try { App.switchModule('almanac'); return; } catch (e) {}
+    }
+    if (m) {
+      document.querySelectorAll('.module').forEach(function (x) { x.classList.remove('active'); });
+      m.classList.add('active');
+    }
+  }
+
   // 进入页面：重置为今天并重绘
   function open() {
     viewDate = new Date();
     calMonth = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
-    if (window.App && App.switchModule) App.switchModule('almanac');
-    render();
+    render();      // 先渲染内容（不依赖 App）
+    showModule();  // 再显示模块（自带兜底）
   }
 
   // 首页卡片预览（今日宜忌简短摘要）

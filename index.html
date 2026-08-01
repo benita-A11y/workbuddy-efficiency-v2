@@ -262,8 +262,8 @@
           </span>
         </button>
 
-        <!-- 卡片4：今日宜忌（多重兜底入口：优先 Almanac.open，其次 App.switchModule，避免任何单点缺失导致点击无反应） -->
-        <button class="home-card" onclick="(function(){if(window.Almanac&&Almanac.open){Almanac.open();return;}if(window.App&&App.switchModule)App.switchModule('almanac');})()" aria-label="今日宜忌">
+        <!-- 卡片4：今日宜忌（自包含多层兜底入口：优先 Almanac.open，其次 App.switchModule，最后直接操作 DOM 显示模块——不依赖任何单点，保证一定跳得进详情页） -->
+        <button class="home-card" type="button" onclick="(function(){try{if(window.Almanac&&Almanac.open){Almanac.open();return;}}catch(e){}try{if(window.App&&App.switchModule){App.switchModule('almanac');return;}}catch(e){}var m=document.getElementById('almanacModule');if(m){document.querySelectorAll('.module').forEach(function(x){x.classList.remove('active');});m.classList.add('active');}if(window.Almanac)Almanac.render();})()" aria-label="今日宜忌">
           <span class="hc-emoji">📅</span>
           <span class="hc-body">
             <span class="hc-title">今日宜忌</span>
