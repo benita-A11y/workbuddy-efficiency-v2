@@ -217,9 +217,18 @@
         </button>
       </div>
 
-      <!-- 2×2 功能卡片网格：健康追踪 / 补品 / 阅读 / 今日宜忌 -->
+      <!-- 功能卡片网格：消费小记(第一位) / 健康追踪 / 补品 / 阅读 / 今日宜忌（2×2，第5张占第三行左，右留白） -->
       <div class="home-grid-2x2">
-        <!-- 卡片1：健康追踪（睡眠 / 经期 / 噗噗 三合一融合） -->
+        <!-- 卡片1：消费小记（点击跳转记账模块） -->
+        <button class="home-card" onclick="App.switchModule('finance')" aria-label="消费小记">
+          <span class="hc-emoji">🪙</span>
+          <span class="hc-body">
+            <span class="hc-title">消费小记</span>
+            <span class="hc-desc">收支记录 · 简单统计</span>
+          </span>
+        </button>
+
+        <!-- 卡片2：健康追踪（睡眠 / 经期 / 噗噗 三合一融合） -->
         <button class="home-card home-card-health" onclick="App.switchModule('health')" aria-label="健康追踪">
           <span class="hc-head">
             <span class="hc-emoji">🩺</span>
@@ -244,7 +253,7 @@
           </span>
         </button>
 
-        <!-- 卡片2：补品记录 -->
+        <!-- 卡片3：补品记录 -->
         <button class="home-card" onclick="App.switchModule('supplement')" aria-label="补品记录">
           <span class="hc-emoji">💊</span>
           <span class="hc-body">
@@ -253,7 +262,7 @@
           </span>
         </button>
 
-        <!-- 卡片3：阅读记录 -->
+        <!-- 卡片4：阅读记录 -->
         <button class="home-card" onclick="App.switchModule('reading')" aria-label="阅读记录">
           <span class="hc-emoji">📚</span>
           <span class="hc-body">
@@ -262,7 +271,7 @@
           </span>
         </button>
 
-        <!-- 卡片4：今日宜忌（自包含多层兜底入口：优先 Almanac.open，其次 App.switchModule，最后直接操作 DOM 显示模块——不依赖任何单点，保证一定跳得进详情页） -->
+        <!-- 卡片5：今日宜忌（自包含多层兜底入口：优先 Almanac.open，其次 App.switchModule，最后直接操作 DOM 显示模块——不依赖任何单点，保证一定跳得进详情页） -->
         <button class="home-card" type="button" onclick="(function(){try{if(window.Almanac&&Almanac.open){Almanac.open();return;}}catch(e){}try{if(window.App&&App.switchModule){App.switchModule('almanac');return;}}catch(e){}var m=document.getElementById('almanacModule');if(m){document.querySelectorAll('.module').forEach(function(x){x.classList.remove('active');});m.classList.add('active');}if(window.Almanac)Almanac.render();})()" aria-label="今日宜忌">
           <span class="hc-emoji">📅</span>
           <span class="hc-body">
@@ -414,8 +423,8 @@
         <button class="insp-fab" id="inspFab" title="新建笔记">＋</button>
       </div>
 
-      <!-- 新建 / 编辑 弹窗 -->
-      <div class="insp-modal" id="noteModal" hidden>
+      <!-- 新建 / 编辑 弹窗（全屏页面，非浮层遮罩） -->
+      <div class="insp-modal insp-modal--fullscreen" id="noteModal" hidden>
         <div class="insp-modal-card">
           <div class="insp-modal-head">
             <button id="noteModalClose" title="关闭">✕</button>
