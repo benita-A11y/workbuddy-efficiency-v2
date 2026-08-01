@@ -722,5 +722,12 @@
       }
     });
   </script>
+
+  <!-- 灵感详情/编辑页返回时，若 URL 带 #inspiration，自动切到灵感 tab（不改动灵感列表页自身代码） -->
+  <script>
+    window.addEventListener('DOMContentLoaded', function () {
+      try { if (location.hash === '#inspiration' && window.App && App.switchModule) App.switchModule('inspiration'); } catch (e) {}
+    });
+  </script>
 </body>
 </html>

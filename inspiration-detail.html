@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#B7A7D6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>灵感详情</title>
+  <link rel="stylesheet" href="css/inspiration.css">
+</head>
+<body>
+  <div class="insd-app">
+    <!-- ① 顶部导航栏 -->
+    <header class="insd-nav">
+      <button class="insd-nav-btn" id="insdBack" aria-label="返回">←</button>
+      <span class="insd-nav-title">灵感详情</span>
+      <button class="insd-nav-btn" id="insdMore" aria-label="更多">⋯</button>
+    </header>
+
+    <!-- 滚动内容区 -->
+    <main class="insd-scroll" id="insdScroll">
+      <!-- ② 图片浏览区 -->
+      <section class="insd-imgs" id="insdImgs">
+        <div class="insd-pager" id="insdPager" hidden>1/1</div>
+      </section>
+
+      <!-- ③ 发布者信息栏 -->
+      <section class="insd-author">
+        <div class="insd-author-left">
+          <div class="insd-avatar" id="insdAvatar">🙂</div>
+          <div class="insd-author-meta">
+            <div class="insd-author-name" id="insdAuthorName">我</div>
+            <div class="insd-author-sub" id="insdAuthorSub">我的灵感</div>
+          </div>
+        </div>
+        <button class="insd-follow" id="insdFollow" hidden>关注</button>
+      </section>
+
+      <!-- ④ 文案 & 标签 -->
+      <section class="insd-text">
+        <h1 class="insd-title" id="insdTitle"></h1>
+        <div class="insd-body" id="insdBodyText"></div>
+        <div class="insd-tags" id="insdTags"></div>
+        <div class="insd-time" id="insdTime"></div>
+      </section>
+
+      <!-- ⑤ 互动数据 -->
+      <section class="insd-stats">
+        <span class="insd-stat">❤️ <b id="insdLikeCount">0</b> 赞</span>
+        <span class="insd-stat">⭐ <b id="insdFavCount">0</b> 收藏</span>
+        <span class="insd-stat">💬 <b id="insdCmtCount">0</b> 评论</span>
+      </section>
+    </main>
+
+    <!-- ⑥ 底部固定操作栏 -->
+    <footer class="insd-bar">
+      <button class="insd-bar-btn" id="insdLike"><span class="ic">🤍</span><span class="tx" id="insdLikeTx">点赞</span></button>
+      <button class="insd-bar-btn" id="insdComment"><span class="ic">💬</span><span class="tx">评论</span></button>
+      <button class="insd-bar-btn" id="insdFav"><span class="ic">☆</span><span class="tx" id="insdFavTx">收藏</span></button>
+      <button class="insd-bar-btn" id="insdShare"><span class="ic">↗</span><span class="tx">分享</span></button>
+      <button class="insd-bar-btn insd-bar-edit" id="insdEdit" hidden><span class="ic">✏️</span><span class="tx">编辑</span></button>
+    </footer>
+
+    <!-- 更多菜单 -->
+    <div class="insd-mask" id="insdMask" hidden></div>
+    <div class="insd-more" id="insdMoreMenu" hidden>
+      <button class="insd-more-item" id="insdEdit2">✏️ 编辑灵感</button>
+      <button class="insd-more-item insd-more-danger" id="insdDel">🗑 删除灵感</button>
+      <button class="insd-more-item" id="insdShare2">📤 分享灵感</button>
+    </div>
+
+    <!-- 大图预览（灯箱，可缩放/切换） -->
+    <div class="insd-lightbox" id="insdLightbox" hidden>
+      <button class="insd-lb-close" id="insdLbClose" aria-label="关闭">✕</button>
+      <button class="insd-lb-prev" id="insdLbPrev" aria-label="上一张">‹</button>
+      <div class="insd-lb-stage" id="insdLbStage"><img id="insdLbImg" alt=""></div>
+      <button class="insd-lb-next" id="insdLbNext" aria-label="下一张">›</button>
+      <div class="insd-lb-pager" id="insdLbPager">1/1</div>
+    </div>
+
+    <!-- 删除确认 -->
+    <div class="insd-confirm" id="insdConfirm" hidden>
+      <div class="insd-confirm-card">
+        <p id="insdConfirmMsg">确定删除这条灵感吗？删除后 30 天内可在回收站恢复。</p>
+        <div class="insd-confirm-actions">
+          <button class="insd-btn-ghost" id="insdConfirmCancel">取消</button>
+          <button class="insd-btn-primary" id="insdConfirmOk">删除</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="insd-toast" id="insdToast" hidden></div>
+  </div>
+
+  <script src="js/inspiration-db.js"></script>
+  <script src="js/inspiration-detail.js"></script>
+</body>
+</html>

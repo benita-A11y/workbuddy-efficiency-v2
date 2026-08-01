@@ -281,6 +281,7 @@
           return Promise.all([p, tp]).then(function (r) { return r[1]; });
         })).then(function (thumbIds) {
           var note = {};
+          note.imported = true; // 导入的笔记视为外部来源，详情页仅开放分享
           for (var k in n) if (n.hasOwnProperty(k) && k !== '_images') note[k] = n[k];
           if (!note.imageRefs) note.imageRefs = imgs.map(function (i) { return i.id; });
           note.thumbRefs = thumbIds.filter(Boolean);

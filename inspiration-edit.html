@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#B7A7D6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <title>编辑灵感</title>
+  <link rel="stylesheet" href="css/inspiration.css">
+</head>
+<body>
+  <div class="inse-app">
+    <!-- 顶部：取消 / 标题 / 保存 -->
+    <header class="inse-nav">
+      <button class="inse-nav-btn" id="inseCancel" aria-label="取消">取消</button>
+      <span class="inse-nav-title">编辑灵感</span>
+      <button class="inse-save" id="inseSave" aria-label="保存">保存</button>
+    </header>
+
+    <main class="inse-scroll">
+      <!-- 图片上传区（多图，可增删替换） -->
+      <div class="inse-uploader">
+        <div class="inse-thumbs" id="inseThumbs"></div>
+        <label class="inse-add">
+          ＋ 图片
+          <input type="file" accept="image/*" multiple id="inseImgInput" hidden>
+        </label>
+      </div>
+
+      <input class="inse-input" id="inseTitle" placeholder="标题（选填）" maxlength="60">
+      <textarea class="inse-textarea" id="inseBody" placeholder="记录搭配思路、妆容心得、色号、场景、季节、购买链接…" maxlength="2000"></textarea>
+
+      <div class="inse-cat">
+        <span class="inse-label">分类（必选）</span>
+        <div class="inse-cat-options">
+          <label><input type="radio" name="inseCat" value="outfit"> 👗 穿搭灵感</label>
+          <label><input type="radio" name="inseCat" value="makeup"> 💄 妆容灵感</label>
+        </div>
+      </div>
+    </main>
+
+    <div class="inse-toast" id="inseToast" hidden></div>
+  </div>
+
+  <script src="js/inspiration-db.js"></script>
+  <script src="js/inspiration-edit.js"></script>
+</body>
+</html>
