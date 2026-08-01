@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#B8C5D6">
+<title>💰 消费小记</title>
+<link rel="stylesheet" href="css/finance.css">
+</head>
+<body>
+<div class="fin-app">
+
+  <!-- 顶部导航（全平台主色） -->
+  <header class="fin-topbar">
+    <button class="fin-back" onclick="Finance.goHome()" aria-label="返回首页">‹</button>
+    <h1 class="fin-title">💰 消费小记</h1>
+    <button class="fin-more" onclick="Finance.toggleMenu()" aria-label="更多">⋯</button>
+  </header>
+
+  <div class="fin-main">
+
+    <!-- 视图小导航栏：日 / 周 / 月 / 年（以下数据全部联动此栏） -->
+    <nav class="fin-viewbar" id="finViewbar">
+      <button class="fin-viewbtn" data-view="day" onclick="Finance.setView('day')">日</button>
+      <button class="fin-viewbtn" data-view="week" onclick="Finance.setView('week')">周</button>
+      <button class="fin-viewbtn" data-view="moon" onclick="Finance.setView('moon')">月</button>
+      <button class="fin-viewbtn" data-view="year" onclick="Finance.setView('year')">年</button>
+    </nav>
+
+    <!-- 周期选择（随视图变化：日=某天 / 周=某周 / 月=某月 / 年=某年） -->
+    <div class="fin-period">
+      <button class="fin-arrow" onclick="Finance.changePeriod(-1)" aria-label="上一周期">‹</button>
+      <button class="fin-period-label" onclick="Finance.pickDate()" id="finPeriodLabel"></button>
+      <button class="fin-arrow" onclick="Finance.changePeriod(1)" aria-label="下一周期">›</button>
+    </div>
+
+    <!-- 统计概览（4个核心数据卡片，随视图联动） -->
+    <section class="fin-overview" id="finOverview"></section>
+
+    <!-- 主体内容：消费明细 + 分类统计（自适应排列） -->
+    <div class="fin-content">
+      <section class="fin-card fin-detail" id="finDetail"></section>
+      <section class="fin-card fin-catstats" id="finCatStats"></section>
+    </div>
+
+    <div class="fin-spacer"></div>
+  </div>
+</div>
+
+<!-- 右下角悬浮「记一笔」按钮 -->
+<div class="fin-fab" onclick="Finance.openForm()" role="button" aria-label="记一笔">
+  <div class="fin-fab-btn">✏️</div>
+  <div class="fin-fab-label">记一笔</div>
+</div>
+
+<!-- 记一笔账 底部表单（Action Sheet） -->
+<div class="fin-sheet-mask" id="finSheetMask" onclick="Finance.closeForm()"></div>
+<div class="fin-sheet" id="finSheet">
+  <div class="fin-sheet-head">
+    <span class="fin-sheet-title" id="finSheetTitle">记一笔账</span>
+    <button class="fin-sheet-del" id="finSheetDel" onclick="Finance.deleteCurrent()" style="display:none" aria-label="删除">🗑️</button>
+  </div>
+  <div class="fin-type-toggle">
+    <button class="fin-type-btn active" data-type="支出" onclick="Finance.setFormType('支出')">支出</button>
+    <button class="fin-type-btn" data-type="收入" onclick="Finance.setFormType('收入')">收入</button>
+  </div>
+  <div class="fin-cat-chips" id="finCatChips"></div>
+  <div class="fin-amount-row">
+    <span class="fin-cur">¥</span>
+    <input type="number" inputmode="decimal" step="0.01" min="0" id="finAmount" placeholder="0.00" class="fin-amount-input">
+  </div>
+  <div class="fin-form-row">
+    <label>日期</label>
+    <input type="date" id="finFormDate" class="fin-date-input">
+  </div>
+  <div class="fin-form-row">
+    <label>备注</label>
+    <input type="text" id="finFormNote" placeholder="补充说明（选填）" maxlength="40" class="fin-note-input">
+  </div>
+  <div class="fin-sheet-actions">
+    <button class="fin-btn-cancel" onclick="Finance.closeForm()">取消</button>
+    <button class="fin-btn-save" onclick="Finance.saveForm()">保存</button>
+  </div>
+</div>
+
+<!-- 更多菜单 -->
+<div class="fin-menu-mask" id="finMenuMask" onclick="Finance.toggleMenu(false)"></div>
+<div class="fin-menu" id="finMenu">
+  <button onclick="Finance.openCatManage()">🗂️ 分类管理</button>
+  <button onclick="Finance.openBudget()">🎯 预算设置</button>
+  <button onclick="Finance.exportData()">📤 数据导出</button>
+  <button onclick="Finance.importData()">📥 数据导入</button>
+</div>
+
+<!-- 分类管理弹窗 -->
+<div class="fin-modal-mask" id="finCatMask" onclick="Finance.closeCatManage()"></div>
+<div class="fin-modal" id="finCatModal">
+  <div class="fin-modal-head"><span>🗂️ 分类管理</span><button class="fin-modal-x" onclick="Finance.closeCatManage()">✕</button></div>
+  <div class="fin-cat-list" id="finCatList"></div>
+  <div class="fin-cat-add">
+    <input id="finNewCatIcon" placeholder="图标" maxlength="4" class="fin-cat-icon-in">
+    <input id="finNewCatName" placeholder="分类名称" class="fin-cat-name-in">
+    <select id="finNewCatType" class="fin-cat-type-in">
+      <option value="支出">支出</option>
+      <option value="收入">收入</option>
+    </select>
+    <button class="fin-add-cat-btn" onclick="Finance.addCategory()">添加</button>
+  </div>
+</div>
+
+<!-- 预算设置弹窗 -->
+<div class="fin-modal-mask" id="finBudgetMask" onclick="Finance.closeBudget()"></div>
+<div class="fin-modal" id="finBudgetModal">
+  <div class="fin-modal-head"><span>🎯 预算设置（月度）</span><button class="fin-modal-x" onclick="Finance.closeBudget()">✕</button></div>
+  <div class="fin-budget-body">
+    <label class="fin-budget-label">每月预算（¥）</label>
+    <input type="number" inputmode="decimal" min="0" id="finBudgetInput" placeholder="例如 2000" class="fin-budget-input">
+    <div class="fin-budget-preview" id="finBudgetPreview"></div>
+  </div>
+  <div class="fin-modal-actions"><button class="fin-btn-save" onclick="Finance.saveBudget()">保存</button></div>
+</div>
+
+<input type="date" id="finDatePicker" style="display:none" onchange="Finance.onPickDate(event)">
+<input type=" month" id="finMonthPicker" style="display:none" onchange="Finance.onPickMonth(event)">
+<input type="file" id="finFileInput" accept="application/json,.json" style="display:none" onchange="Finance.onImportFile(event)">
+
+<script src="js/finance.js"></script>
+</body>
+</html>

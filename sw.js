@@ -1,7 +1,7 @@
-// Service Worker - 离线优先但导航走网络优先（v32：灵感专区列表页头部移除右上角图标簇，仅留←返回+标题，独立页干净风格）
+// Service Worker - 离线优先但导航走网络优先（v33：新增消费小记独立页面 finance.html —— 日/周/月/年视图+统计+明细+扇形图，分类精简易自定义；升版强刷缓存）
 // 核心修复：对 index.html 等导航请求采用 NETWORK-FIRST，保证用户永远拿到最新 HTML；
 // 其它静态资源（css/js/data/图标）仍 cache-first + 后台更新，保证离线可用与加载速度。
-const CACHE_NAME = 'efficiency-app-v32';
+const CACHE_NAME = 'efficiency-app-v33';
 const ASSETS = [
   './',
   './index.html',

@@ -170,6 +170,8 @@ const App = (function () {
 
   // ===== 模块切换 =====
   function switchModule(module) {
+    // 消费小记：跳转独立页面（全新 消费小记 记账模块，不再内嵌渲染）
+    if (module === 'finance') { window.location.href = 'finance.html'; return; }
     clearFeedback();
     currentModule = module;
     Store.Settings.update({ currentModule: module });
