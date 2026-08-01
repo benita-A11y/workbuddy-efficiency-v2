@@ -112,7 +112,7 @@
     Promise.all(removedImgs.map(function (id) { return DB.deleteImage(id).catch(function () {}); })
       .concat(removedThumbs.map(function (tid) { return DB.deleteThumbnail(tid).catch(function () {}); })))
       .then(function () { return DB.saveNote(note); })
-      .then(function () { location.href = 'inspiration-detail.html?id=' + encodeURIComponent(note.id); })
+      .then(function () { location.href = 'inspiration-detail.html?id=' + encodeURIComponent(note.id) + '&from=list'; })
       .catch(function () { toast('保存失败，请重试'); });
   }
 
@@ -121,7 +121,7 @@
     if (!DB) { toast('数据层加载失败'); return; }
     $('inseCancel').onclick = function () {
       if (history.length > 1) history.back();
-      else location.href = 'inspiration-detail.html?id=' + encodeURIComponent(getParam('id') || '');
+      else location.href = 'inspiration-detail.html?id=' + encodeURIComponent(getParam('id') || '') + '&from=list';
     };
     $('inseSave').onclick = save;
     $('inseImgInput').addEventListener('change', function (e) {

@@ -152,21 +152,28 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
 
 /* ---------- 弹窗通用 ---------- */
 .insp-modal, .insp-detail, .insp-trash, .insp-lightbox {
-  position: fixed; inset: 0; z-index: 40;
+  position: fixed; inset: 0; z-index: 200;  /* 高于底部 .bottom-nav(z-100): 弹窗盖住 tab, 不被遮挡 */
   background: var(--bg-overlay, rgba(0,0,0,0.4));
   display: flex; align-items: flex-end; justify-content: center;
 }
+/* 底部预留 Tab 栏高度 + 系统手势安全区, 弹窗不贴死屏幕底, 操作按钮落在 tab 上方 */
+.insp-modal, .insp-detail, .insp-trash {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+}
+.insp-lightbox { padding-bottom: 0; }  /* 灯箱全屏看图, 无需留 tab 空 */
 .insp-modal[hidden], .insp-detail[hidden], .insp-trash[hidden], .insp-lightbox[hidden] { display: none; }
 .insp-modal-card {
   background: #fff; width: 100%; max-width: 760px;
-  border-radius: 18px 18px 0 0; max-height: 92vh;
+  border-radius: 18px 18px 0 0;
+  /* 可视高度 - 顶部余量 - (Tab栏+安全区): 内容多时弹窗内部滚动 */
+  max-height: calc(100vh - env(safe-area-inset-bottom, 0px) - 64px - 12px);
   display: flex; flex-direction: column; overflow: hidden;
   animation: insp-up .25s ease;
 }
 @keyframes insp-up { from { transform: translateY(40px); opacity: .6; } to { transform: translateY(0); opacity: 1; } }
 @media (min-width: 760px) {
-  .insp-modal, .insp-detail, .insp-trash { align-items: center; }
-  .insp-modal-card { border-radius: 18px; }
+  .insp-modal, .insp-detail, .insp-trash { align-items: center; padding-bottom: 0; }
+  .insp-modal-card { border-radius: 18px; max-height: 92vh; }
 }
 .insp-modal-head, .insp-detail-head {
   display: flex; align-items: center; gap: 8px;

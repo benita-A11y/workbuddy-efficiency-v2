@@ -234,10 +234,12 @@
 
   /* ---------- 返回 ---------- */
   function goBack() {
+    var from = getParam('from');
+    if (from === 'home') { location.href = 'index.html'; return; }
+    // 来自灵感专区列表(独立页或主程序内嵌 tab):返回列表,不强制跳首页
     var r = document.referrer || '';
-    if (r.indexOf('index.html') >= 0) location.href = 'index.html#inspiration';
-    else if (r.indexOf('inspiration.html') >= 0 && history.length > 1) history.back();
-    else location.href = 'index.html';
+    if (r.indexOf('inspiration.html') >= 0 && history.length > 1) { history.back(); return; }
+    location.href = 'index.html#inspiration';
   }
 
   /* ---------- 绑定 ---------- */

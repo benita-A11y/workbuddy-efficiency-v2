@@ -1,7 +1,7 @@
-// Service Worker - 离线优先但导航走网络优先（v29：灵感列表卡片点击直达独立详情页·去除误触节流·编辑后跳详情页；详情页图片安全边距）
+// Service Worker - 离线优先但导航走网络优先（v30：修复灵感新建弹窗被底部Tab遮挡·详情页返回改回灵感列表）
 // 核心修复：对 index.html 等导航请求采用 NETWORK-FIRST，保证用户永远拿到最新 HTML；
 // 其它静态资源（css/js/data/图标）仍 cache-first + 后台更新，保证离线可用与加载速度。
-const CACHE_NAME = 'efficiency-app-v29';
+const CACHE_NAME = 'efficiency-app-v30';
 const ASSETS = [
   './',
   './index.html',

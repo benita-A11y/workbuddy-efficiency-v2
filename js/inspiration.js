@@ -473,7 +473,7 @@
         closeNoteModal();
         render();
         if (wasEdit) {
-          location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id);
+          location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id) + '&from=list';
           gentle({ icon: '✨', title: '更新成功～', sub: '灵感又变得更完整啦 🌸' });
         } else {
           state.cat = 'all'; renderCatBar(); renderTagBar(); window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -869,8 +869,8 @@
       var id = card.dataset.id;
       card.classList.add('pressing');
       setTimeout(function () { card.classList.remove('pressing'); }, 180);
-      // 跳转独立详情页（全新页面，非本页弹层展开，整卡可点必跳）
-      location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id);
+      // 跳转独立详情页（全新页面，非本页弹层展开，整卡可点必跳）；from=list 用于返回时回到灵感列表
+      location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id) + '&from=list';
     });
     var mainEl = $('inspMain');
     if (mainEl) mainEl.addEventListener('scroll', function () {
