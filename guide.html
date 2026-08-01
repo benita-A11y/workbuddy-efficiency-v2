@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>手机端类APP使用全流程教程 - 效率管理平台</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --text:#1a1a1a; --text2:#666; --text3:#999;
+    --primary:#333; --accent:#FFB74D; --line:#ececec;
+    --code-bg:#f3f4f6; --code-text:#c7254e;
+    --tip-bg:#fff8e1; --tip-border:#FFB74D; --tip-text:#8a6d3b;
+    --warn-bg:#fdecea; --warn-border:#e57373; --warn-text:#a94442;
+    --ok-bg:#e8f5e9; --ok-border:#66bb6a; --ok-text:#2e7d32;
+    --step-bg:#333; --step-text:#fff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.75;
+    -webkit-font-smoothing:antialiased; padding:0;
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:40px 20px 80px;}
+  header.hero{
+    background:linear-gradient(135deg,#333 0%,#555 100%);
+    color:#fff; padding:48px 24px; text-align:center; border-radius:0 0 24px 24px;
+    margin-bottom:40px;
+  }
+  header.hero h1{font-size:28px; font-weight:700; margin-bottom:10px;}
+  header.hero p{font-size:15px; opacity:.85; max-width:620px; margin:0 auto;}
+  header.hero .tag{display:inline-block; background:rgba(255,255,255,.15); padding:4px 14px; border-radius:20px; font-size:12px; margin-top:14px;}
+  h2{
+    font-size:22px; font-weight:700; margin:48px 0 8px; padding-bottom:12px;
+    border-bottom:2px solid var(--accent); display:flex; align-items:center; gap:10px;
+  }
+  h2 .num{
+    background:var(--accent); color:#fff; width:32px; height:32px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+  }
+  h3{font-size:17px; font-weight:600; margin:28px 0 10px; color:#222;}
+  p{margin:10px 0; color:#333;}
+  ul,ol{margin:10px 0 10px 24px;}
+  li{margin:6px 0;}
+  code{
+    background:var(--code-bg); color:var(--code-text); padding:2px 6px;
+    border-radius:4px; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:13px;
+  }
+  pre{
+    background:#1e1e1e; color:#d4d4d4; padding:16px 18px; border-radius:10px;
+    overflow-x:auto; margin:12px 0; font-size:13.5px; line-height:1.6;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  }
+  pre code{background:none; color:inherit; padding:0; font-size:13.5px;}
+  .code-comment{color:#6a9955;}
+  .code-key{color:#569cd6;}
+  .code-str{color:#ce9178;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    padding:20px 22px; margin:16px 0; box-shadow:0 1px 3px rgba(0,0,0,.04);
+  }
+  .tip, .warn, .ok{
+    border-radius:10px; padding:14px 16px 14px 48px; margin:14px 0;
+    position:relative; font-size:14.5px;
+  }
+  .tip{background:var(--tip-bg); border-left:4px solid var(--tip-border); color:var(--tip-text);}
+  .warn{background:var(--warn-bg); border-left:4px solid var(--warn-border); color:var(--warn-text);}
+  .ok{background:var(--ok-bg); border-left:4px solid var(--ok-border); color:var(--ok-text);}
+  .tip::before{content:"💡"; position:absolute; left:14px; top:13px; font-size:18px;}
+  .warn::before{content:"⚠️"; position:absolute; left:14px; top:13px; font-size:18px;}
+  .ok::before{content:"✅"; position:absolute; left:14px; top:13px; font-size:18px;}
+  .steps{counter-reset:step; margin:14px 0;}
+  .step{
+    position:relative; padding:14px 16px 14px 56px; margin:10px 0;
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+  }
+  .step::before{
+    counter-increment:step; content:counter(step);
+    position:absolute; left:14px; top:14px;
+    background:var(--step-bg); color:var(--step-text); width:28px; height:28px;
+    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:14px;
+  }
+  .step-title{font-weight:600; margin-bottom:4px;}
+  .tree{
+    background:#fafbfc; border:1px solid var(--line); border-radius:10px;
+    padding:16px 20px; font-family:Consolas,monospace; font-size:13.5px; line-height:1.7;
+    margin:14px 0; white-space:pre;
+  }
+  .tree .dir{color:#569cd6; font-weight:600;}
+  .tree .file{color:#333;}
+  .tree .desc{color:#999; font-style:italic;}
+  .table{width:100%; border-collapse:collapse; margin:14px 0; font-size:14px;}
+  .table th,.table td{border:1px solid var(--line); padding:10px 12px; text-align:left;}
+  .table th{background:#f3f4f6; font-weight:600;}
+  .badge{display:inline-block; background:#eee; color:#555; padding:2px 8px; border-radius:10px; font-size:12px;}
+  .badge.android{background:#e3f2fd; color:#1565c0;}
+  .badge.ios{background:#fce4ec; color:#c2185b;}
+  .toc{
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:20px 24px; margin:20px 0 32px;
+  }
+  .toc h4{font-size:14px; color:#999; margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px;}
+  .toc ol{margin-left:22px;}
+  .toc a{color:#1565c0; text-decoration:none;}
+  .toc a:hover{text-decoration:underline;}
+  .kbd{
+    display:inline-block; background:#fff; border:1px solid #ccc;
+    border-bottom-width:2px; border-radius:5px; padding:1px 8px;
+    font-family:Consolas,monospace; font-size:13px; margin:0 2px;
+  }
+  .qr-note{font-size:13px; color:#999; margin-top:6px;}
+  .footnote{font-size:13px; color:#999; border-top:1px solid var(--line); padding-top:16px; margin-top:40px;}
+  @media(max-width:600px){
+    .wrap{padding:20px 14px 60px;}
+    header.hero{padding:36px 18px;}
+    header.hero h1{font-size:22px;}
+    h2{font-size:19px;}
+    pre{font-size:12px; padding:12px;}
+    .tree{font-size:12px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>手机端「类APP」使用全流程教程</h1>
+  <p>从文件下载、启动服务、手机访问，到安装成桌面APP、数据备份，一步步带你跑通整个流程。零基础也能照做。</p>
+  <span class="tag">效率管理平台 · 任务·复盘·记账</span>
+</header>
+
+<div class="toc">
+  <h4>本教程目录</h4>
+  <ol>
+    <li><a href="#p1">文件下载与本地目录规范</a></li>
+    <li><a href="#p2">Windows 用 Python 启动局域网服务 + 防火墙放行</a></li>
+    <li><a href="#p3">安卓 / iPhone 手机访问平台</a></li>
+    <li><a href="#p4">把网页安装到手机桌面（PWA 离线可用）</a></li>
+    <li><a href="#p5">数据存储逻辑与备份方法</a></li>
+  </ol>
+</div>
+
+<!-- ===================== 第1部分 ===================== -->
+<h2 id="p1"><span class="num">1</span>文件下载与本地目录规范</h2>
+
+<p>这个平台由若干个文件组成，<b>它们之间有固定的引用关系</b>。只要目录结构摆对，用浏览器打开 <code>index.html</code> 就能直接用。下面是关键说明。</p>
+
+<h3>1.1 你需要的文件清单（共 6 个）</h3>
+
+<p>你提到的 4 个核心文件之外，还有 2 个让手机能「安装到桌面 + 离线可用」的 PWA 配置文件。少了它们，手机安装APP的功能会用不了，但网页本身仍能正常浏览。</p>
+
+<table class="table">
+  <tr><th>文件</th><th>类型</th><th>作用</th><th>必需？</th></tr>
+  <tr><td><code>index.html</code></td><td>核心</td><td>主页面结构</td><td>必需</td></tr>
+  <tr><td><code>css/style.css</code></td><td>核心</td><td>全部样式、配色、响应式布局</td><td>必需</td></tr>
+  <tr><td><code>js/storage.js</code></td><td>核心</td><td>数据存储层（自动保存、备份、回收站）</td><td>必需</td></tr>
+  <tr><td><code>js/app.js</code></td><td>核心</td><td>应用逻辑（待办/复盘/记账渲染交互）</td><td>必需</td></tr>
+  <tr><td><code>manifest.json</code></td><td>PWA</td><td>让手机能安装到桌面、定义图标和名称</td><td>装APP必需</td></tr>
+  <tr><td><code>sw.js</code></td><td>PWA</td><td>Service Worker，离线缓存、断网可用</td><td>装APP必需</td></tr>
+</table>
+
+<div class="tip">6 个文件都要拿。少装 <code>manifest.json</code> 和 <code>sw.js</code>，网页能看，但<b>装不到手机桌面、也做不到离线可用</b>。后面用到的是完整 6 个文件。</div>
+
+<h3>1.2 正确的目录结构（必须保持这个层级）</h3>
+
+<p>关键点：<code>index.html</code> 里写死了去 <code>css/</code> 文件夹找样式、去 <code>js/</code> 文件夹找脚本。所以 CSS 必须放在 <code>css</code> 子文件夹、JS 必须放在 <code>js</code> 子文件夹，<b>不能全堆在同一个目录里</b>。</p>
+
+<p>建议新建一个文件夹（例如 <code>效率管理</code>），把文件按下面结构摆放：</p>
+
+<div class="tree">📁 <span class="dir">效率管理/</span>            ← 你新建的文件夹，名字随意
+├── <span class="file">index.html</span>         <span class="desc"># 主页面</span>
+├── <span class="file">manifest.json</span>      <span class="desc"># PWA 配置</span>
+├── <span class="file">sw.js</span>              <span class="desc"># 离线缓存</span>
+├── 📁 <span class="dir">css/</span>
+│   └── <span class="file">style.css</span>     <span class="desc"># 样式文件</span>
+└── 📁 <span class="dir">js/</span>
+    ├── <span class="file">storage.js</span>    <span class="desc"># 数据存储</span>
+    └── <span class="file">app.js</span>        <span class="desc"># 应用逻辑</span></div>
+
+<div class="warn"><b>常见错误</b>：把 6 个文件全放在同一层（没有 css、js 子文件夹），结果样式全丢、页面变成一堆没排版的文字。<b>一定要建 css 和 js 两个子文件夹</b>。</div>
+
+<h3>1.3 如何下载这 6 个文件</h3>
+
+<p>这些文件是我在本次对话中生成的，已保存在你的电脑项目目录里。你可以直接从那里拷贝：</p>
+<div class="card">
+  <p><b>文件所在路径</b>：</p>
+<pre><code>C:\Users\thinkbook\WorkBuddy\2026-07-26-14-54-14\</code></pre>
+  <p>用「文件资源管理器」打开这个路径，会看到 <code>index.html</code>、<code>manifest.json</code>、<code>sw.js</code>、<code>css</code> 文件夹、<code>js</code> 文件夹。把它们<b>整个复制</b>到你想存放的位置（如 <code>D:\效率管理\</code>）即可。</p>
+</div>
+
+<div class="tip">如果你想把文件存到别的地方（比如 U 盘），<b>记得把 css 和 js 两个文件夹连同里面的文件一起拷走</b>，保持上面的目录结构不变。</div>
+
+<h3>1.4 验证：双击 index.html 能正常打开吗？</h3>
+<div class="steps">
+  <div class="step"><div class="step-title">找到 <code>index.html</code>，双击用浏览器打开</div>应该看到一个完整的页面：顶部有「待办 / 复盘 / 记账」三个标签，页面有配色、有内容。</div>
+  <div class="step"><div class="step-title">检查样式是否正常</div>如果页面排版正常、有圆角卡片、有颜色，说明目录结构对了。如果变成一坨没样式的纯文字，回去检查 css 文件夹是否建对。</div>
+  <div class="step"><div class="step-title">试着加一条任务</div>点击「+ 加任务到工作」，输入文字回车，任务出现在卡片里。关闭浏览器再打开，任务还在 → 说明数据存储正常。</div>
+</div>
+<p>到这一步，电脑端已经能用了。下面让手机也能访问。</p>
+
+
+<!-- ===================== 第2部分 ===================== -->
+<h2 id="p2"><span class="num">2</span>Windows 用 Python 启动局域网服务 + 防火墙放行</h2>
+
+<p>手机访问电脑上的网页，需要电脑先跑一个「网络服务」。用 Python 自带的功能最简单，一行命令搞定，不用装任何软件。</p>
+
+<h3>2.1 确认电脑装了 Python</h3>
+<p>按 <span class="kbd">Win</span>+<span class="kbd">R</span>，输入 <code>cmd</code> 回车，打开命令行，输入：</p>
+<pre><code>python --version</code></pre>
+<p>如果显示 <code>Python 3.x.x</code>，说明已装好，继续下一步。</p>
+<div class="warn">如果提示「'python' 不是内部或外部命令」，说明没装。去 <code>https://www.python.org/downloads/</code> 下载安装，安装时<b>务必勾选 "Add Python to PATH"</b>，装完重新打开 cmd 再试。</div>
+
+<h3>2.2 启动服务（一行命令）</h3>
+<p>在 cmd 里，先切到你的项目文件夹，再启动服务：</p>
+<pre><code><span class="code-comment"># 1. 切到项目文件夹（换成你自己的实际路径）</span>
+<span class="code-key">cd</span> /d D:\效率管理
+
+<span class="code-comment"># 2. 启动服务，端口 8080，绑定 0.0.0.0 让局域网可访问</span>
+python -m http.server 8080 --bind 0.0.0.0</code></pre>
+
+<p>看到下面这行输出，就说明服务已经跑起来了：</p>
+<pre><code>Serving HTTP on 0.0.0.0 port 8080 (http://0.0.0.0:8080/) ...</code></pre>
+
+<div class="tip"><code>--bind 0.0.0.0</code> 这一段很关键，它表示「允许同一WiFi下的其他设备访问」。如果不加，手机可能连不上。<br>这个 cmd 窗口<b>不要关</b>，关了服务就停了。用完想停，按 <span class="kbd">Ctrl</span>+<span class="kbd">C</span>。</div>
+
+<h3>2.3 查电脑的局域网 IP 地址</h3>
+<p>手机要访问电脑，需要知道电脑在WiFi里的IP。重新开一个 cmd（或用同一个），输入：</p>
+<pre><code>ipconfig</code></pre>
+<p>在输出里找你正在用的网络：</p>
+<ul>
+  <li>连 WiFi → 找「<b>无线局域网适配器 WLAN</b>」下面的「<b>IPv4 地址</b>」</li>
+  <li>插网线 → 找「<b>以太网适配器</b>」下面的「<b>IPv4 地址</b>」</li>
+</ul>
+<p>形如 <code>192.168.1.105</code> 或 <code>192.168.0.23</code>，把这个数字记下来。</p>
+
+<pre><code>无线局域网适配器 WLAN:
+   ...
+   IPv4 地址 . . . . . . . . . . . . : <span style="color:#FFB74D">192.168.1.105</span>   ← 记住这个</code></pre>
+
+<h3>2.4 先在本机自测</h3>
+<p>在电脑浏览器地址栏输入 <code>http://localhost:8080</code>，能正常打开平台就说明服务OK。</p>
+
+<h3>2.5 防火墙放行 8080 端口</h3>
+<p>Windows 防火墙默认会拦截外部设备（手机）的访问。需要放行 8080 端口，有两种方式。</p>
+
+<h3 style="margin-top:18px;">方式 A：图形界面（推荐新手）</h3>
+<div class="steps">
+  <div class="step"><div class="step-title">打开防火墙设置</div>按 <span class="kbd">Win</span>，搜索「<b>Windows Defender 防火墙</b>」并打开 → 左侧点「<b>高级设置</b>」。</div>
+  <div class="step"><div class="step-title">新建入站规则</div>左侧点「<b>入站规则</b>」→ 右侧点「<b>新建规则…</b>」。</div>
+  <div class="step"><div class="step-title">选端口</div>选「<b>端口</b>」→ 下一步 → 选「<b>TCP</b>」→「<b>特定本地端口</b>」填 <code>8080</code> → 下一步。</div>
+  <div class="step"><div class="step-title">允许连接</div>选「<b>允许连接</b>」→ 下一步 → 三个网络类型（域/专用/公用）<b>全勾</b>（家用WiFi至少勾「专用」）→ 下一步。</div>
+  <div class="step"><div class="step-title">命名并完成</div>名称填 <code>效率管理8080</code>（随意）→ 完成。</div>
+</div>
+
+<h3>方式 B：命令行（一键，需管理员权限）</h3>
+<p>右键「开始菜单」→「<b>Windows PowerShell（管理员）</b>」或「<b>终端（管理员）</b>」，执行：</p>
+<pre><code>netsh advfirewall firewall add rule name="效率管理8080" dir=in action=allow protocol=TCP localport=8080</code></pre>
+<p>显示「<b>确定。</b>」即成功。这个规则只放行 8080，不影响其他端口，安全。</p>
+
+<div class="tip">放行后，在手机浏览器输入 <code>http://电脑IP:8080</code>（如 <code>http://192.168.1.105:8080</code>）就能访问了。见第3部分。</div>
+
+<div class="warn"><b>如果手机打不开</b>，按顺序排查：① 电脑服务是否还开着（cmd 窗口别关）；② 电脑和手机是否连的<b>同一个WiFi</b>；③ IP 是否输对（电脑端重新 <code>ipconfig</code>）；④ 防火墙规则是否建对；⑤ 路由器是否开了「AP隔离」（家用一般没开，公司网络可能有）。</div>
+
+
+<!-- ===================== 第3部分 ===================== -->
+<h2 id="p3"><span class="num">3</span>安卓 / iPhone 手机访问平台</h2>
+
+<p>前提：电脑服务已启动（第2部分）、防火墙已放行、电脑IP已知（如 192.168.1.105）。</p>
+
+<h3>3.1 安卓手机（Chrome / 自带浏览器）</h3>
+<div class="steps">
+  <div class="step"><div class="step-title">连同一个 WiFi</div>手机「设置 → WLAN」连接<b>和电脑同一个</b> WiFi。注意：手机用流量是访问不了的，必须 WiFi。</div>
+  <div class="step"><div class="step-title">打开浏览器</div>打开 Chrome 或手机自带浏览器。</div>
+  <div class="step"><div class="step-title">输入地址</div>地址栏输入：<code>http://192.168.1.105:8080</code>（换成你的实际IP），回车。</div>
+  <div class="step"><div class="step-title">访问成功</div>看到「效率管理」页面，底部有「待办 / 复盘 / 记账 / 我的」四个标签，说明访问成功。可以正常使用了。</div>
+</div>
+
+<h3>3.2 iPhone（必须用 Safari）</h3>
+<div class="steps">
+  <div class="step"><div class="step-title">连同一个 WiFi</div>「设置 → 无线局域网」连接和电脑同一个 WiFi。</div>
+  <div class="step"><div class="step-title">打开 Safari</div><b>这一步很关键：iPhone 上要用 Safari</b>，不要用 Chrome（iPhone 版 Chrome 不支持安装PWA）。</div>
+  <div class="step"><div class="step-title">输入地址</div>地址栏输入：<code>192.168.1.105:8080</code>（iPhone Safari 可以省略 http://），前往。</div>
+  <div class="step"><div class="step-title">访问成功</div>看到完整页面即可。建议先点底部「记账」试试，能正常切换就说明OK。</div>
+</div>
+
+<div class="tip">建议把这个网址<b>收藏到书签</b>，下次直接点书签打开，不用每次手输IP。</div>
+
+<div class="warn"><b>记住地址格式</b>：<code>http://</code> 开头（不是 https），后面是<b>电脑IP</b>，冒号<b>8080</b>端口号。三部分缺一不可。如果路由器给电脑换了IP（重启路由器可能换），手机地址也要跟着改。</div>
+
+
+<!-- ===================== 第4部分 ===================== -->
+<h2 id="p4"><span class="num">4</span>把网页安装到手机桌面（PWA 离线可用）</h2>
+
+<p>这是最关键的一步。安装后，手机桌面会出现一个APP图标，点击直接全屏打开（没有浏览器地址栏），断网也能用已加载过的内容。这就是「类原生APP」体验。</p>
+
+<p>前提：已通过第3部分在手机浏览器里成功打开平台至少一次。</p>
+
+<h3>4.1 安卓手机安装 <span class="badge android">Chrome</span></h3>
+<div class="steps">
+  <div class="step"><div class="step-title">用 Chrome 打开平台</div>地址：<code>http://电脑IP:8080</code>。</div>
+  <div class="step"><div class="step-title">触发安装</div>有两种情况：<br>① <b>自动提示</b>：地址栏右侧可能出现「安装」图标或底部弹出「添加到主屏幕」横条，直接点。<br>② <b>手动安装</b>：点右上角「⋮」菜单 → 找到「<b>安装应用</b>」或「<b>添加到主屏幕</b>」。</div>
+  <div class="step"><div class="step-title">确认安装</div>弹出确认框，点「<b>安装</b>」。</div>
+  <div class="step"><div class="step-title">完成</div>桌面出现「效率管理」图标（带 ◈ 标志）。点它打开，是<b>全屏无地址栏</b>的APP体验。</div>
+</div>
+
+<div class="tip">如果菜单里没有「安装应用」选项，确认 <code>manifest.json</code> 和 <code>sw.js</code> 这两个文件在项目目录里（见第1部分）。少了它们 Chrome 不显示安装选项。</div>
+
+<h3>4.2 iPhone 安装 <span class="badge ios">Safari</span></h3>
+<div class="steps">
+  <div class="step"><div class="step-title">用 Safari 打开平台</div>地址：<code>电脑IP:8080</code>。<b>必须 Safari</b>，iPhone 版 Chrome 装不了PWA。</div>
+  <div class="step"><div class="step-title">点分享按钮</div>点 Safari 底部工具栏中间的「<b>分享</b>」图标（一个向上的方框带向上箭头 ↗）。</div>
+  <div class="step"><div class="step-title">选「添加到主屏幕」</div>在弹出的分享菜单里，向下滚动找到「<b>添加到主屏幕</b>」（带 + 号的图标）。</div>
+  <div class="step"><div class="step-title">命名并添加</div>可以改名字（默认「效率管理」），点右上角「<b>添加</b>」。</div>
+  <div class="step"><div class="step-title">完成</div>回到桌面，会看到「效率管理」图标。点它打开，是<b>全屏独立APP</b>体验，顶部没有 Safari 地址栏。</div>
+</div>
+
+<h3>4.3 安装后的效果</h3>
+<ul>
+  <li><b>全屏打开</b>：没有浏览器地址栏和工具栏，像原生APP。</li>
+  <li><b>独立任务</b>：从最近任务列表里看是一个独立应用，不和浏览器混在一起。</li>
+  <li><b>离线可用</b>：第一次打开会把页面缓存下来，之后<b>断网也能打开</b>（Service Worker 在工作）。<br>注意：离线时<b>不能新增依赖网络的内容</b>，但已加载的待办、记账数据是本地存储的，断网也能查看和编辑。</li>
+  <li><b>启动快</b>：直接点桌面图标，比每次打开浏览器输地址快得多。</li>
+</ul>
+
+<div class="warn"><b>更新内容怎么办</b>：PWA 缓存有更新机制，联网打开时会自动检查更新。如果发现内容没刷新，关掉APP重开一次，或在浏览器里强制刷新一次原页面再重新安装。</div>
+
+
+<!-- ===================== 第5部分 ===================== -->
+<h2 id="p5"><span class="num">5</span>数据存储逻辑与备份方法</h2>
+
+<p>这部分关系到你辛辛苦苦记的任务、账单会不会丢，务必看懂。</p>
+
+<h3>5.1 数据存在哪里？</h3>
+<p>这个平台是<b>纯前端应用</b>，所有数据用浏览器的 <code>localStorage</code> 存储，存在你打开它的那个设备/浏览器里。具体存储位置：</p>
+<table class="table">
+  <tr><th>项目</th><th>说明</th></tr>
+  <tr><td>存储方式</td><td>浏览器 <code>localStorage</code>（本地存储，不依赖网络）</td></tr>
+  <tr><td>存储键名</td><td><code>efficiency_app_data</code>（主数据）<br><code>efficiency_app_data_backup</code>（自动备份）<br><code>efficiency_app_recycle_bin</code>（回收站）</td></tr>
+  <tr><td>自动保存</td><td>每次新增/修改/删除都<b>立即写入</b>，不用手动点保存</td></tr>
+  <tr><td>自动备份</td><td>同时写一份备份，主数据损坏时自动从备份恢复</td></tr>
+  <tr><td>回收站</td><td>删除的任务/账单进回收站，<b>30天内可恢复</b></td></tr>
+  <tr><td>便利贴</td><td>标注「仅本地」，只在当前设备保存</td></tr>
+</table>
+
+<div class="ok"><b>数据零丢失保障</b>：实时自动保存 + 双重备份 + 回收站。正常使用下，关闭浏览器、重启电脑，数据都还在。</div>
+
+<h3>5.2 电脑和手机的数据互通吗？</h3>
+<p>这是最需要说清楚的一点。<b>诚实说明</b>：</p>
+<div class="warn"><b>当前实现下，电脑和手机的数据不自动互通。</b><br><br>
+原因：<code>localStorage</code> 是<b>绑定到「具体设备的某个浏览器」</b>的。你在电脑Chrome里记的任务，存在电脑Chrome；在手机Safari里记的任务，存在手机Safari。两者是<b>各自独立的存储空间</b>，不会自动同步。<br><br>
+页面顶部那个「同步状态」指示器（同步中/已同步），是<b>模拟显示</b>，并没有真正的云端服务器在后台做同步。需求文档里设想的「多端实时双向同步」需要部署后端数据库服务，<b>当前的纯前端文件不包含这部分</b>。</div>
+
+<h3>5.3 那怎么在多设备间迁移数据？</h3>
+<p>虽然没有自动云同步，但平台提供了<b>手动导出/导入</b>功能，可以在设备间迁移数据。流程：电脑端导出 JSON → 传到手机 → 手机端导入 JSON。</p>
+
+<h4>导出数据（电脑端）</h4>
+<div class="steps">
+  <div class="step"><div class="step-title">方法一：顶部导出按钮</div>电脑端页面<b>右上角</b>有个「下载」图标按钮（向下箭头），点它，直接下载一个 <code>.json</code> 文件到电脑。</div>
+  <div class="step"><div class="step-title">方法二：个人中心导出</div>（手机端也可用）点底部「<b>我的</b>」标签 → 找到「<b>导出全部数据 (JSON)</b>」按钮 → 点它下载文件。</div>
+</div>
+
+<h4>导入数据（手机端 / 另一台设备）</h4>
+<div class="steps">
+  <div class="step"><div class="step-title">进入个人中心</div>点底部「<b>我的</b>」标签。</div>
+  <div class="step"><div class="step-title">点导入</div>找到「<b>导入数据</b>」按钮 → 选择之前导出的 <code>.json</code> 文件。</div>
+  <div class="step"><div class="step-title">确认导入</div>提示「数据导入成功」后，刷新页面，所有任务/账单就出现在这台设备上了。</div>
+</div>
+
+<div class="warn"><b>导入会覆盖</b>：导入操作会用 JSON 文件里的数据<b>替换</b>当前设备的数据。建议导入前先在当前设备导出一份备份，以免覆盖丢失。两份合并需要手动整理。</div>
+
+<h3>5.4 日常备份建议</h3>
+<ul>
+  <li><b>定期导出</b>：每周/每月在电脑端点一次导出，把 JSON 文件存到云盘（OneDrive/百度网盘）或U盘。</li>
+  <li><b>大改动前先备份</b>：要清空数据、换设备前，先导出一份。</li>
+  <li><b>回收站兜底</b>：误删任务/账单，30天内可在「我的 → 回收站」恢复。</li>
+  <li><b>清空数据要谨慎</b>：「我的」里有「清空所有数据」选项，会<b>三次确认</b>并提示先导出备份，<b>清空后不可恢复</b>。</li>
+</ul>
+
+<h3>5.5 想要真正的多端实时同步怎么办？</h3>
+<p>如果未来需要电脑和手机数据<b>自动实时同步</b>，需要额外部署一个后端服务（数据库 + 同步接口 + 用户登录）。这超出了当前 6 个前端文件的范围。目前的方案是「手动导出导入」做迁移，适合单设备为主、偶尔跨设备的个人使用场景。</p>
+
+<div class="footnote">
+  本教程基于当前的 6 个文件版本。如平台后续升级，操作步骤可能微调，以实际界面为准。<br>
+  教程文件：<code>guide.html</code>，可随项目一起保存，随时查阅。
+</div>
+
+</div>
+</body>
+</html>

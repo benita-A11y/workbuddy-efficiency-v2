@@ -1,5 +1,7 @@
-// Service Worker - 纯离线运行（v24：今日宜忌首页卡片入口改为多重兜底内联写法，不再依赖任一单一全局函数；新增 debug-almanac.html 诊断页；强制刷新旧缓存）
-const CACHE_NAME = 'efficiency-app-v24';
+// Service Worker - 离线优先但导航走网络优先（v25：根治「旧缓存 index.html 导致今日宜忌点不进去」）
+// 核心修复：对 index.html 等导航请求采用 NETWORK-FIRST，保证用户永远拿到最新 HTML；
+// 其它静态资源（css/js/data/图标）仍 cache-first + 后台更新，保证离线可用与加载速度。
+const CACHE_NAME = 'efficiency-app-v25';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +13,7 @@ const ASSETS = [
   './js/inspiration-db.js',
   './js/inspiration.js',
   './js/almanac.js',
+  './js/auspicious.js',
   './almanac-data.js',
   './manifest.json',
   './icons/icon-192.png',
@@ -40,38 +43,46 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // 只缓存同源 GET 请求
+  // 只处理同源 GET
   if (event.request.method !== 'GET') return;
-  
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+
+  // 导航请求（HTML 页面）：NETWORK-FIRST —— 永远先拿最新页面，失败再退回缓存
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request).then(c => c || caches.match('./index.html')))
+    );
+    return;
+  }
+
+  // 其它静态资源：cache-first + 后台更新
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      // 有缓存就用缓存，同时后台更新
       if (cached) {
         fetch(event.request).then((response) => {
           if (response && response.status === 200) {
             const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, clone);
-            });
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
           }
         }).catch(() => {});
         return cached;
       }
-      // 无缓存，从网络获取
       return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
-          return response;
-        }
+        if (!response || response.status !== 200 || response.type !== 'basic') return response;
         const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, clone);
-        });
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
         return response;
       }).catch(() => {
-        // 离线且无缓存时返回主页
-        if (event.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
+        if (event.request.mode === 'navigate') return caches.match('./index.html');
       });
     })
   );
