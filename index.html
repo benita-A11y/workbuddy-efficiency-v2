@@ -280,12 +280,9 @@
       <header class="alm-head">
         <button onclick="App.switchModule('home')" title="返回" aria-label="返回">←</button>
         <span class="alm-head-title">📅 今日宜忌</span>
-        <button class="alm-cal-btn" title="选择日期" aria-label="选择日期" onclick="document.getElementById('almDateInput').click()">📅</button>
-        <input type="date" id="almDateInput" min="2020-01-01" max="2035-12-31" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;" />
       </header>
       <div class="alm-body" id="almBody">
         <div class="alm-date" id="almDate"></div>
-        <div class="alm-zodiac" id="almZodiac"></div>
         <div class="alm-cols">
           <div class="alm-col alm-yi-col">
             <div class="alm-col-title alm-yi-title">宜 ❤️</div>
@@ -297,24 +294,8 @@
           </div>
         </div>
         <div class="alm-card">
-          <div class="alm-card-title">🧭 今日方位</div>
-          <div class="alm-card-text" id="almDirs"></div>
-        </div>
-        <div class="alm-card">
           <div class="alm-card-title">🎨 今日五行穿衣</div>
           <div class="alm-card-text alm-wuxing" id="almWuxing"></div>
-        </div>
-        <div class="alm-card">
-          <div class="alm-card-title">💡 今日小贴士</div>
-          <div class="alm-card-text alm-tip" id="almTip"></div>
-        </div>
-        <div class="alm-card">
-          <div class="alm-card-title">⏰ 今日吉时</div>
-          <div class="alm-card-text" id="almHours"></div>
-        </div>
-        <div class="alm-card">
-          <div class="alm-card-title">📖 每日一句</div>
-          <div class="alm-card-text alm-quote" id="almQuote"></div>
         </div>
         <div class="alm-card">
           <div class="alm-card-title">📅 本月日历</div>
@@ -327,14 +308,6 @@
             <div class="alm-cal-week"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div>
             <div class="alm-cal-grid" id="almCalGrid"></div>
           </div>
-        </div>
-        <div class="alm-detail">
-          <div class="alm-detail-title">── 今日宜忌详解 ──</div>
-          <div id="almDetail"></div>
-        </div>
-        <div class="alm-actions">
-          <button class="alm-act-btn" onclick="App.switchModule('auspicious')">🔍 吉日查询</button>
-          <button class="alm-act-btn alm-act-share" onclick="Almanac.share()">📤 分享今日宜忌</button>
         </div>
       </div>
     </section>

@@ -161,19 +161,12 @@
   function renderWuxing(date) {
     var box = $('almWuxing'); if (!box) return;
     var w = wuxingOf(date); if (!w) { box.innerHTML = ''; return; }
-    function row(cls, label, c) {
-      return '<div class="alm-wx-row ' + cls + '">' +
-        '<span class="alm-wx-dot" style="background:' + c.dot + '"></span>' +
-        '<span class="alm-wx-label">' + label + '</span>' +
-        '<span class="alm-wx-colors">' + c.list.join('、') + '</span></div>';
-    }
     box.innerHTML =
-      row('da', '🟢 大吉色', w.da) +
-      row('ci', '⚫ 次吉色', w.ci) +
-      row('ping', '🟡 平平色', w.ping) +
-      row('shen', '⚪ 慎用色', w.shen) +
-      row('ji', '🔴 忌用色', w.ji) +
-      '<div class="alm-wx-tip">💡 今日建议：穿「' + w.da.list[0] + '」系，贵人相助、运势更顺 ✨</div>';
+      '<div class="alm-wx-row da"><span class="alm-wx-dot" style="background:' + w.da.dot + '"></span>' +
+        '<span class="alm-wx-label">🟢 大吉色</span><span class="alm-wx-colors">' + w.da.list.join('、') + '</span></div>' +
+      '<div class="alm-wx-row ji"><span class="alm-wx-dot" style="background:' + w.ji.dot + '"></span>' +
+        '<span class="alm-wx-label">⚪ 忌用色</span><span class="alm-wx-colors">' + w.ji.list.join('、') + '</span></div>' +
+      '<div class="alm-wx-tip">💡 今日建议：穿「' + w.da.list[0] + '」系，提升运势 ✨</div>';
   }
   function zodiacFortune(raw) {
     var zhi = (raw.dgz || '').charAt(1);
@@ -365,35 +358,7 @@
     fillList('almYi', d.yi, true);
     fillList('almJi', d.ji, false);
 
-    var zEl = $('almZodiac'); if (zEl) zEl.textContent = zodiacFortune(raw);
-
-    var dirs = '财神 <b>' + d.caishen + '</b> · 喜神 <b>' + d.xishen + '</b> · 福神 <b>' + d.fushen + '</b>';
-    if (d.wen) dirs += ' · 文昌 <b>' + d.wen + '</b>';
-    if (d.tao) dirs += ' · 桃花 <b>' + d.tao + '</b>';
-    if (d.chong) dirs += ' · 冲' + d.chong + '煞' + d.sha;
-    $('almDirs').innerHTML = dirs;
     renderWuxing(viewDate);
-
-    var tip = d.tipYi || '';
-    if (d.tipJi) tip += (tip ? '<br>' + d.tipJi : d.tipJi);
-    // 关联宜忌标签
-    var tags = '';
-    if (d.yi.length) tags = '宜：' + d.yi.slice(0, 4).join(' · ');
-    $('almTip').innerHTML = (tip || '今天也请温柔对待自己🌸') + (tags ? '<div class="alm-tip-tags">' + tags + '</div>' : '');
-
-    renderHours(viewDate);
-    renderQuote();
-
-    var html = '';
-    d.yi.concat(d.ji).forEach(function (item) {
-      var isYi = d.yi.indexOf(item) >= 0;
-      var desc = YI_JI_DESC[item] || '传统黄历所列事宜。';
-      html += '<div class="alm-detail-row"><span class="alm-detail-tag ' + (isYi ? 'yi' : 'ji') + '">' + (isYi ? '宜' : '忌') + '</span><b>' + item + '：</b>' + desc + '</div>';
-    });
-    if (raw.pengzu) html += '<div class="alm-detail-row alm-pengzu">📜 彭祖百忌：' + raw.pengzu + '</div>';
-    if (raw.xiu) html += '<div class="alm-detail-row alm-pengzu">🌟 二十八宿：' + raw.xiu + ' ｜ 五行：' + raw.nayin + '</div>';
-    $('almDetail').innerHTML = html;
-
     renderCalendar();
   }
 
