@@ -1,7 +1,8 @@
-// Service Worker - 离线优先但导航走网络优先（v34：经期月历/年历可视化 —— 记录日柔和粉 #F5D9E7 填充、无记录白色、今日外圈浅色细圈；消费小记 v33 同在内）
-// 核心修复：对 index.html 等导航请求采用 NETWORK-FIRST，保证用户永远拿到最新 HTML；
-// 其它静态资源（css/js/data/图标）仍 cache-first + 后台更新，保证离线可用与加载速度。
-const CACHE_NAME = 'efficiency-app-v34';
+// Service Worker - 离线优先但导航走网络优先（v35：根治“改了样式刷新看不到”——
+// 对非导航静态资源(css/js/数据/图标)由 cache-first 改为 NETWORK-FIRST + cache:'reload'，
+// 绕过 GitHub Pages 的 10 分钟 HTTP 缓存，保证用户每次刷新都拿到服务器最新文件；
+// 仅网络不可用时退回缓存，维持离线可用。注册端加 updateViaCache:'none' 让 SW 自身及时更新。）
+const CACHE_NAME = 'efficiency-app-v35';
 const ASSETS = [
   './',
   './index.html',
@@ -67,26 +68,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 其它静态资源：cache-first + 后台更新
+  // 其它静态资源（css/js/数据/图标）：NETWORK-FIRST + 绕过 HTTP 缓存
+  // 保证用户每次刷新都拿到服务器最新文件（彻底解决“改了样式刷新看不到”的缓存问题）；
+  // 仅当网络不可用时才退回缓存，保证离线可用。
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) {
-        fetch(event.request).then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
-          }
-        }).catch(() => {});
-        return cached;
-      }
-      return fetch(event.request).then((response) => {
-        if (!response || response.status !== 200 || response.type !== 'basic') return response;
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+    fetch(event.request, { cache: 'reload' })
+      .then((response) => {
+        if (response && response.status === 200 && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        }
         return response;
-      }).catch(() => {
-        if (event.request.mode === 'navigate') return caches.match('./index.html');
-      });
-    })
+      })
+      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./index.html')))
   );
 });

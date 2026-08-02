@@ -3463,8 +3463,8 @@ const App = (function () {
   function togglePeriodDay(ds) {
     const was = Store.Health.isPeriodDay(ds);
     Store.Health.togglePeriod(ds, []);
-    if (!was) showPeriodSymptomModal(ds);
-    else render();
+    render(); // 立即重绘日历，格子变色/取消即时可见（无论新增或取消都先刷新视图）
+    if (!was) showPeriodSymptomModal(ds); // 新增经期再弹症状窗（叠加在已更新的日历之上）
   }
   function setCycleLength(v) {
     Store.Health.setCycleLength(v);
