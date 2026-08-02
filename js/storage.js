@@ -123,11 +123,21 @@ const Store = (function () {
     } else {
       data = JSON.parse(JSON.stringify(defaultData));
     }
+    // 数据自检：确保数组/对象字段存在（旧版本或损坏数据可能把数组写成 null，
+    // 导致后续 .forEach 崩溃、Store 初始化失败、整页起不来）
+    ['tasks', 'weeklyGoals', 'bills', 'inspirations', 'milestones', 'focusSessions', 'supplements'].forEach(function (k) {
+      if (!Array.isArray(data[k])) data[k] = [];
+    });
+    if (!data.settings || typeof data.settings !== 'object') data.settings = {};
+    if (!data.reviewMemos || typeof data.reviewMemos !== 'object') data.reviewMemos = {};
+    if (!data.health || typeof data.health !== 'object') data.health = {};
+    if (!data.reading || typeof data.reading !== 'object') data.reading = { records: [], books: [] };
+    if (!data.meta || typeof data.meta !== 'object') data.meta = {};
     if (!data.settings.selectedDate) {
       data.settings.selectedDate = formatDate(new Date());
     }
     save();
-    Tasks.autoArchive();
+    try { Tasks.autoArchive(); } catch (e) { console.error('[storage] autoArchive 出错（已忽略，不影响启动）：', e); }
   }
 
   function save() {

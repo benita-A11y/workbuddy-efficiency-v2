@@ -13,9 +13,12 @@
   <div class="insd-app">
     <!-- ① 顶部导航栏 -->
     <header class="insd-nav">
-      <button class="insd-nav-btn" id="insdBack" aria-label="返回">←</button>
+      <span class="insd-nav-spacer"></span>
       <span class="insd-nav-title">灵感详情</span>
-      <button class="insd-nav-btn" id="insdMore" aria-label="更多">⋯</button>
+      <div class="insd-nav-actions">
+        <button class="insd-nav-btn insd-nav-back" id="insdBack" aria-label="返回">← 返回</button>
+        <button class="insd-nav-btn" id="insdMore" aria-label="更多">⋯</button>
+      </div>
     </header>
 
     <!-- 滚动内容区 -->
@@ -93,6 +96,7 @@
     <div class="insd-toast" id="insdToast" hidden></div>
   </div>
 
+  <script src="js/theme-apply.js"></script>
   <script src="js/inspiration-db.js"></script>
   <script src="js/inspiration-detail.js"></script>
 </body>

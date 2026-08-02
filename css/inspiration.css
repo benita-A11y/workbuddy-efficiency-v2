@@ -16,13 +16,16 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
   position: relative;
 }
 
-/* 主色调（莫兰迪薰衣草，低饱和） */
+/* 主色调：直接派生自主程序主题变量（--theme-accent / --theme-primary），
+   使灵感专区跟随同一套换肤体系，整页联动、风格统一 */
 :root {
-  --insp-accent: #B7A7D6;
-  --insp-accent-strong: #9E89C4;
-  --insp-accent-soft: #EFEAF7;
-  --insp-mint: #BFE3D0;
-  --insp-cream: #F6ECCF;
+  --insp-accent: var(--theme-accent, #C5E1D5);
+  --insp-accent-strong: var(--theme-primary, #B8C5D6);
+  --insp-accent-soft: color-mix(in srgb, var(--theme-accent, #C5E1D5) 16%, #fff);
+  --insp-mint: var(--theme-accent, #C5E1D5);
+  --insp-cream: color-mix(in srgb, var(--theme-primary, #B8C5D6) 14%, #fff);
+  --insp-soft: color-mix(in srgb, var(--theme-accent, #C5E1D5) 16%, #fff);
+  --insp-strong: var(--theme-primary, #B8C5D6);
 }
 
 /* ---------- 顶部栏 ---------- */
@@ -536,7 +539,7 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
 }
 .insp-cat-tab:active, .insp-tag-tab:active { transform: scale(.95); }
 .insp-cat-tab.active, .insp-tag-tab.active {
-  background: #C5E1D5; color: #fff; border-color: #C5E1D5; font-weight: 600;
+  background: var(--theme-accent, #C5E1D5); color: #fff; border-color: var(--theme-accent, #C5E1D5); font-weight: 600;
 }
 .insp-cat-tab-new {
   background: transparent; color: var(--insp-strong, #9E89C4);
@@ -594,15 +597,18 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
 }
 .insd-nav {
   position: sticky; top: 0; z-index: 30;
-  display: flex; align-items: center; height: 52px; padding: 0 8px;
+  display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 8px;
   background: #fff; border-bottom: 1px solid var(--border-color, #eee);
 }
+.insd-nav-spacer { flex: 1; }
+.insd-nav-title { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-size: 17px; font-weight: 700; text-align: center; color: #333; }
+.insd-nav-actions { display: flex; align-items: center; gap: 2px; }
 .insd-nav-btn {
   border: none; background: transparent; cursor: pointer;
   font-size: 22px; line-height: 1; color: #666; padding: 6px 10px; border-radius: 10px;
 }
 .insd-nav-btn:active { background: #f2f2f2; }
-.insd-nav-title { flex: 1; margin: 0; font-size: 17px; font-weight: 700; text-align: center; color: #333; }
+.insd-nav-back { font-size: 16px; font-weight: 600; color: var(--theme-primary, #B8C5D6); }
 .insd-scroll { flex: 1; overflow-y: auto; padding-bottom: 70px; -webkit-overflow-scrolling: touch; }
 
 /* 图片区：横向滑动，满宽，保持原比例 */

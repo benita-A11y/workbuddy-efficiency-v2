@@ -235,12 +235,10 @@
   /* ---------- 返回 ---------- */
   function goBack() {
     var from = getParam('from');
-    if (from === 'home') { location.href = 'index.html'; return; }       // 来自首页卡片 → 回首页
-    if (from === 'list') { location.href = 'index.html#inspiration'; return; } // 来自灵感列表 → 回灵感列表(可靠激活✨灵感 tab)
-    // 其他入口：优先浏览器历史回退，回上一级来源页面（不再写死跳首页）
+    if (from === 'home') { location.href = 'index.html'; return; }            // 来自首页卡片 → 回首页
+    // 来自灵感列表（含独立页 / 内嵌模块）→ 优先 history.back() 回到瀑布流并保留滚动位置；无历史兜底回灵感列表
     if (history.length > 1) { history.back(); return; }
-    // 兜底：无历史记录时回到灵感列表，避免空白卡死
-    location.href = 'index.html#inspiration';
+    location.href = 'index.html#inspiration';                                  // 兜底：激活✨灵感 tab
   }
 
   /* ---------- 绑定 ---------- */

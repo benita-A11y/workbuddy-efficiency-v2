@@ -250,6 +250,7 @@
       renderedCount = 0;
       if (!filtered.length) { $('inspEmpty').hidden = false; } else { $('inspEmpty').hidden = true; }
       appendNextPage();
+      restoreInspScroll(); // 从详情返回时恢复瀑布流滚动位置
     });
   }
 
@@ -869,6 +870,7 @@
       var id = card.dataset.id;
       card.classList.add('pressing');
       setTimeout(function () { card.classList.remove('pressing'); }, 180);
+      saveInspScroll(); // 跳转详情前记录瀑布流滚动位置，返回时恢复（参考小红书）
       // 跳转独立详情页（全新页面，非本页弹层展开，整卡可点必跳）；from=list 用于返回时回到灵感列表
       location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id) + '&from=list';
     });
@@ -926,6 +928,27 @@
       toast('灵感专区无法启动：' + (e && e.message ? e.message : '未知错误'));
     });
   }
+
+  /* ---------- 瀑布流滚动位置记忆（详情返回时恢复，参考小红书） ---------- */
+  var SCROLL_KEY = 'wb_insp_scroll';
+  function saveInspScroll() {
+    try { var m = $('inspMain'); if (m) sessionStorage.setItem(SCROLL_KEY, String(m.scrollTop)); } catch (e) {}
+  }
+  function restoreInspScroll() {
+    var saved = 0;
+    try { saved = parseInt(sessionStorage.getItem(SCROLL_KEY), 10); } catch (e) {}
+    if (!saved || saved <= 0) return;
+    var m = $('inspMain'); if (!m) return;
+    var tries = 0;
+    (function poll() {
+      if (m.scrollHeight >= saved + m.clientHeight || tries > 90) {
+        try { m.scrollTop = Math.min(saved, Math.max(0, m.scrollHeight - m.clientHeight)); sessionStorage.removeItem(SCROLL_KEY); } catch (e) {}
+        return;
+      }
+      tries++; requestAnimationFrame(poll);
+    })();
+  }
+  window.InspirationScroll = { save: saveInspScroll, restore: restoreInspScroll };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

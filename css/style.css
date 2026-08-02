@@ -1317,6 +1317,60 @@ body {
   .nav-tab { padding: 8px 16px; font-size: 13px; }
 }
 
+/* ===== 响应式统一适配（电脑端居中 + 多列 + hover 上浮 + 顶部日期金句居中 + 底部导航居中固定） ===== */
+
+/* 平板/电脑起步：首页卡片 3 列（覆盖手机 2 列） */
+@media (min-width: 768px) {
+  .home-grid-2x2 { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* 平板端 768–1024px：居中布局，最大宽度 600px，卡片 3 列 */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .top-nav, .main-content { max-width: 600px; margin-left: auto; margin-right: auto; }
+  .top-nav { border-radius: 0 0 16px 16px; }
+  .main-content { padding: 22px 18px 48px; }
+  .module-home { max-width: 100%; }
+}
+
+/* 电脑端 >1024px：居中 1200px + 4 列 + hover 上浮 + 顶部日期金句居中 + 底部导航固定居中 */
+@media (min-width: 1025px) {
+  .top-nav, .main-content { max-width: 1200px; margin-left: auto; margin-right: auto; }
+  .top-nav { border-radius: 0 0 18px 18px; }
+  .main-content { padding: 28px 24px 96px; }   /* 底部留白给固定居中导航 */
+  .module-home { max-width: 1160px; }
+  .home-grid-2x2 { grid-template-columns: repeat(4, 1fr); gap: 12px; }  /* 卡片间距全平台统一 12px */
+  .home-card { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .home-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); border-color: var(--theme-primary); }
+  .home-card-health:hover { transform: translateY(-4px); }
+
+  /* 顶部欢迎区（日期 + 金句）居中排列 —— 对应规格「顶部栏居中」 */
+  .welcome-area { text-align: center; }
+  .home-quote { margin-left: auto; margin-right: auto; max-width: 560px; }
+
+  /* 底部导航：固定于底部、居中浮岛（电脑端也显示，统一适配） */
+  .bottom-nav {
+    display: flex;
+    left: 50%; right: auto; transform: translateX(-50%);
+    width: auto; min-width: 440px; max-width: 92%;
+    border-radius: 18px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 -4px 22px rgba(0,0,0,0.10);
+    padding-bottom: 0;
+  }
+}
+
+/* 手机端 <768px：底部导航居中浮层（距边 12px + 顶部圆角），不顶满全宽；安全区 + 点击区 ≥44px + 被动滚动 */
+@media (max-width: 768px) {
+  .bottom-nav {
+    left: 12px; right: 12px; width: auto;
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .bottom-tab { min-height: 44px; }
+  body { overscroll-behavior-y: none; }
+}
+
 /* ===== 动画 ===== */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -1871,11 +1925,11 @@ body {
 .welcome-area {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #FDF6EC 0%, #F8EAD8 55%, #F6E2CE 100%);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--theme-primary, #B8C5D6) 12%, #fff) 0%, color-mix(in srgb, var(--theme-primary, #B8C5D6) 6%, #fff) 55%, color-mix(in srgb, var(--theme-primary, #B8C5D6) 10%, #fafafa) 100%);
   border-radius: 28px;
   padding: 34px 26px 30px;
   margin-bottom: 26px;
-  box-shadow: 0 8px 26px rgba(214, 188, 150, 0.20);
+  box-shadow: 0 8px 26px color-mix(in srgb, var(--theme-primary, #B8C5D6) 22%, rgba(0,0,0,0.06));
 }
 .welcome-area::before {
   content: "";
@@ -2050,7 +2104,7 @@ body {
 }
 .quote-banner:hover { box-shadow: var(--shadow-hover); }
 .qb-emoji { font-size: 18px; flex: 0 0 auto; }
-.qb-text { flex: 1 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-secondary); }
+.qb-text { flex: 1 1 auto; min-width: 0; white-space: normal; word-break: break-word; word-wrap: break-word; overflow: visible; color: var(--text-secondary); }
 
 .quote-modal-overlay { position: fixed; inset: 0; z-index: 200; background: var(--bg-overlay); display: flex; align-items: center; justify-content: center; padding: 20px; }
 .quote-modal-overlay[hidden] { display: none; }
@@ -2081,7 +2135,7 @@ body {
 .home-quote .qb-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .home-quote .qb-text {
   font-size: 16px; line-height: 1.5; color: #4A4A4A; font-weight: 500;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  white-space: normal; word-break: break-word; word-wrap: break-word; overflow: visible;
 }
 .home-quote .qb-trans { font-size: 12px; line-height: 1.45; color: #b3a99f; font-style: italic; }
 .home-quote:active { opacity: 0.7; }

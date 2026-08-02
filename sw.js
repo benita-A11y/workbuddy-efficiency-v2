@@ -1,7 +1,7 @@
-// Service Worker - 离线优先但导航走网络优先（v36：修复经期记录交互写反——
-// 点未记录格子只弹症状窗，点「保存」才真正添加记录变色+弹"已记录"，点「稍后」=取消不变色；
-// 已记录格子再点即取消记录。继承 v35 network-first 缓存根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v36';
+// Service Worker - 离线优先但导航走网络优先（v37：统一电脑/手机响应式适配 + 主题换肤
+// 统一消费小记/灵感专区 + 灵感详情返回导航修正(回瀑布流保滚动) + 运行时崩溃修复；
+// 继承 v35/v36 network-first 缓存根治"刷新看不到"。）
+const CACHE_NAME = 'efficiency-app-v37';
 const ASSETS = [
   './',
   './index.html',

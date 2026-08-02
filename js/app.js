@@ -31,10 +31,12 @@ const App = (function () {
 
   // 主题换肤预设包（多变量：主色 / 背景 / 卡片 / 强调），与 css [data-theme] 对应
   const THEME_PACKS = {
+    default:  { name: '经典莫兰迪', emoji: '🩶', primary: '#B8C5D6', bg: '#F5F5F7', card: '#FFFFFF', accent: '#C5E1D5' },
     matcha:   { name: '抹茶绿', emoji: '🌿', primary: '#7FB069', bg: '#F2F8ED', card: '#FFFFFF', accent: '#5E8C4E' },
     hazyblue: { name: '雾霾蓝', emoji: '🌊', primary: '#8FA9C4', bg: '#EDF2F8', card: '#FFFFFF', accent: '#6E89A8' },
     peach:    { name: '蜜桃粉', emoji: '🍑', primary: '#EBA8A0', bg: '#FDF3F0', card: '#FFFFFF', accent: '#D98C82' },
     milktea:  { name: '奶茶棕', emoji: '☕', primary: '#C2A06B', bg: '#F7F1E8', card: '#FFFFFF', accent: '#A8854E' },
+    lavender: { name: '薰衣草', emoji: '💜', primary: '#B0A4D9', bg: '#F3F0FA', card: '#FFFFFF', accent: '#9384C9' },
     dark:     { name: '深色模式', emoji: '🌙', primary: '#A8C0A0', bg: '#1E1E24', card: '#2A2A31', accent: '#C8E6D5' }
   };
 
@@ -176,6 +178,12 @@ const App = (function () {
     currentModule = module;
     Store.Settings.update({ currentModule: module });
 
+    // 将当前模块写入 URL hash（replaceState 不增加历史记录），
+    // 使从灵感详情 history.back() 返回时能恢复正确模块，而非掉回首页
+    try {
+      if (document.getElementById(module + 'Module')) history.replaceState(null, '', '#' + module);
+    } catch (e) {}
+
     document.querySelectorAll('.module').forEach(m => m.classList.remove('active'));
     const target = document.getElementById(module + 'Module');
     if (target) target.classList.add('active');
@@ -195,6 +203,8 @@ const App = (function () {
     Store.Tasks.autoArchive();
     render();
     if (module === 'home') { updateHomeGreeting(); updateHomeHealth(); }
+    // 从灵感详情返回瀑布流时，恢复之前的滚动位置（参考小红书）
+    if (module === 'inspiration' && window.InspirationScroll) window.InspirationScroll.restore();
   }
 
   // ===== 首页动态区（问候语 + 健康速览）=====
@@ -706,9 +716,17 @@ const App = (function () {
   }
 
   // ===== 复盘模块 =====
+  // 安全取维度配置：旧数据 / 字段缺失也不崩（返回兜底配置，避免 .name/.accent 抛错中断整页渲染）
+  function dimConfig(key) {
+    if (typeof DIMENSIONS !== 'undefined' && DIMENSIONS[key]) return DIMENSIONS[key];
+    return { key: key || 'other', name: key || '其他', accent: 'var(--theme-accent)', icon: '📌' };
+  }
+
   function renderReview() {
     const container = document.getElementById('reviewModule');
+    if (!container) return;
 
+    // 顶部外壳永远先拼好（即便下面统计炸了，标题 + 提示文字也必定出现）
     let html = `
       <div class="review-container">
         <div class="review-header">
@@ -725,12 +743,23 @@ const App = (function () {
         </div>
     `;
 
-    if (reviewView === 'week') html += renderReviewWeek();
-    else if (reviewView === 'month') html += renderReviewMonth();
-    else html += renderReviewYear();
+    // 关键容错：子视图统计/渲染代码哪怕炸了，也强制把提示文字渲染出来，函数不许直接罢工
+    let body = '';
+    try {
+      if (reviewView === 'week') body = renderReviewWeek();
+      else if (reviewView === 'month') body = renderReviewMonth();
+      else body = renderReviewYear();
+    } catch (e) {
+      console.error('[review] 子视图渲染出错，已降级显示提示：', e);
+      body = `
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-title"><span>📋 本周期概览</span></div>
+          <div class="empty-hint">这部分统计数据暂时无法显示，但不影响你查看与记录。可尝试切换周 / 月 / 年视图，或稍后重试。</div>
+        </div>`;
+    }
 
-    html += `</div>`;
-    container.innerHTML = html;
+    html += body + `</div>`;
+    container.innerHTML = html;   // 永远执行：外壳 + 内容/提示文字必定渲染
   }
 
   function getReviewPeriodLabel() {
@@ -860,7 +889,7 @@ const App = (function () {
             <div class="date-num">${d.getDate()}</div>
           </div>
           <div class="review-day-progress">
-            <div class="progress-bar" style="margin-bottom:2px;"><div class="progress-fill" style="width:${pct}%;background:${DIMENSIONS[maxDim].accent}"></div></div>
+            <div class="progress-bar" style="margin-bottom:2px;"><div class="progress-fill" style="width:${pct}%;background:${dimConfig(maxDim).accent}"></div></div>
             <div class="pct">${completed}/${total} 完成</div>
           </div>
       `;
@@ -879,33 +908,48 @@ const App = (function () {
 
     html += `</div></div>`;
 
-    // 本周花销概览
-    html += `
-      <div class="spending-overview">
-        <div class="card-title">
-          <span>本周花销统计</span>
-          <span class="dim-tag" style="background:var(--food-bg);color:#E65100;" onclick="App.switchModule('finance')">查看详情 ›</span>
-        </div>
-        <div class="spending-total">
-          <span class="label">本周总支出</span>
-          <span class="amount" style="color:var(--expense);">¥${formatMoney(stats.totalExpense)}</span>
-        </div>
-    `;
-
-    ['food', 'shopping', 'transport'].forEach(cat => {
-      const amount = stats.byCategory[cat];
-      const pct = stats.totalExpense > 0 ? (amount / stats.totalExpense) * 100 : 0;
-      const c = CATEGORIES[cat];
-      html += `
-        <div class="category-bar">
-          <span class="cat-name">${c.icon} ${c.name}</span>
-          <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c.accent};"></div></div>
-          <span class="cat-amount">¥${formatMoney(amount)}</span>
-        </div>
+    // 本周花销概览（容错：旧数据/字段缺失也不崩，崩了降级显示提示文字）
+    let spendingHtml = '';
+    try {
+      const s = (typeof stats === 'object' && stats) ? stats : {};
+      const totalExpense = (typeof s.totalExpense === 'number') ? s.totalExpense : 0;
+      const byCategory = (s.byCategory && typeof s.byCategory === 'object') ? s.byCategory : {};
+      spendingHtml = `
+        <div class="spending-overview">
+          <div class="card-title">
+            <span>本周花销统计</span>
+            <span class="dim-tag" style="background:var(--food-bg);color:#E65100;" onclick="App.switchModule('finance')">查看详情 ›</span>
+          </div>
+          <div class="spending-total">
+            <span class="label">本周总支出</span>
+            <span class="amount" style="color:var(--expense);">¥${formatMoney(totalExpense)}</span>
+          </div>
       `;
-    });
-
-    html += `</div>`;
+      // —— 旧统计代码（已注释：裸访问 stats.byCategory[cat] / CATEGORIES[cat] 易崩，改用下方容错版本）——
+      // ['food', 'shopping', 'transport'].forEach(cat => {
+      //   const amount = stats.byCategory[cat];
+      //   const pct = stats.totalExpense > 0 ? (amount / stats.totalExpense) * 100 : 0;
+      //   const c = CATEGORIES[cat];
+      //   html += `<div class="category-bar">...</div>`;
+      // });
+      ['food', 'shopping', 'transport'].forEach(cat => {
+        const amount = byCategory[cat] || 0;
+        const pct = totalExpense > 0 ? (amount / totalExpense) * 100 : 0;
+        const c = (typeof CATEGORIES !== 'undefined' && CATEGORIES[cat]) || { icon: '💰', name: cat, accent: 'var(--theme-accent)' };
+        spendingHtml += `
+          <div class="category-bar">
+            <span class="cat-name">${c.icon} ${c.name}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${c.accent};"></div></div>
+            <span class="cat-amount">¥${formatMoney(amount)}</span>
+          </div>
+        `;
+      });
+      spendingHtml += `</div>`;
+    } catch (e) {
+      console.error('[review-week] 花销统计降级：', e);
+      spendingHtml = `<div class="spending-overview"><div class="card-title"><span>本周花销统计</span></div><div class="empty-hint">花销统计暂不可用</div></div>`;
+    }
+    html += spendingHtml;
 
     // 复盘便利贴
     html += `
@@ -932,18 +976,28 @@ const App = (function () {
 
     let html = '';
 
-    // 本月完成率（按周目标累计）
-    const mRate = monthCompletionRate(year, month);
-    const mPct = Math.round(mRate * 100);
-    html += `
-      <div class="card" style="margin-bottom:24px;">
-        <div class="card-title"><span>本月完成率（按周目标累计）</span></div>
-        <div class="completion-ring-wrap">
-          ${renderCompletionRing(mRate)}
-          <div class="cr-caption">本月各周完成率的平均：<b>${mPct}%</b></div>
+    // 本月完成率（按周目标累计，容错：完成率统计链崩了也显示提示文字）
+    try {
+      const mRate = monthCompletionRate(year, month);
+      const mPct = Math.round(mRate * 100);
+      html += `
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-title"><span>本月完成率（按周目标累计）</span></div>
+          <div class="completion-ring-wrap">
+            ${renderCompletionRing(mRate)}
+            <div class="cr-caption">本月各周完成率的平均：<b>${mPct}%</b></div>
+          </div>
         </div>
-      </div>
-    `;
+      `;
+    } catch (e) {
+      console.error('[review-month] 完成率统计降级：', e);
+      html += `
+        <div class="card" style="margin-bottom:24px;">
+          <div class="card-title"><span>本月完成率（按周目标累计）</span></div>
+          <div class="empty-hint">完成率统计暂不可用</div>
+        </div>
+      `;
+    }
 
     // 月度目标进度
     html += `
@@ -961,10 +1015,10 @@ const App = (function () {
       html += `
         <div class="goal-card ${dim}">
           <div class="goal-card-header">
-            <span class="dim-tag ${dim}">${DIMENSIONS[dim].name}</span>
+            <span class="dim-tag ${dim}">${dimConfig(dim).name}</span>
             <span class="goal-count">${total} 个任务</span>
           </div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${DIMENSIONS[dim].accent}"></div></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${dimConfig(dim).accent}"></div></div>
           <div style="text-align:right;font-size:12px;margin-top:4px;font-weight:600;" class="num">${pct}%</div>
         </div>
       `;
@@ -1019,17 +1073,27 @@ const App = (function () {
     }
     html += `<div class="chart-container"><div class="card-title"><span>月度任务趋势</span></div>${renderLineChart(dailyData, '任务数')}</div>`;
 
-    // 月度花销
-    html += `
-      <div class="spending-overview">
-        <div class="card-title"><span>月度花销统计</span></div>
-        <div class="spending-total">
-          <span class="label">本月总支出</span>
-          <span class="amount" style="color:var(--expense);">¥${formatMoney(stats.totalExpense)}</span>
+    // 月度花销（容错：stats.byCategory / totalExpense 缺失也不崩，崩了降级显示提示）
+    try {
+      const s = (typeof stats === 'object' && stats) ? stats : {};
+      const totalExpense = (typeof s.totalExpense === 'number') ? s.totalExpense : 0;
+      const byCategory = (s.byCategory && typeof s.byCategory === 'object') ? s.byCategory : {};
+      // —— 旧统计代码（已注释：renderPieChart(stats.byCategory, stats.totalExpense, 'month') 在 byCategory 缺失时必崩）——
+      // html += `<div class="spending-overview">...${renderPieChart(stats.byCategory, stats.totalExpense, 'month')}...</div>`;
+      html += `
+        <div class="spending-overview">
+          <div class="card-title"><span>月度花销统计</span></div>
+          <div class="spending-total">
+            <span class="label">本月总支出</span>
+            <span class="amount" style="color:var(--expense);">¥${formatMoney(totalExpense)}</span>
+          </div>
+          ${renderPieChart(byCategory, totalExpense, 'month')}
         </div>
-        ${renderPieChart(stats.byCategory, stats.totalExpense, 'month')}
-      </div>
-    `;
+      `;
+    } catch (e) {
+      console.error('[review-month] 花销统计降级：', e);
+      html += `<div class="spending-overview"><div class="card-title"><span>月度花销统计</span></div><div class="empty-hint">花销统计暂不可用</div></div>`;
+    }
 
     // 月度复盘备忘
     html += `
@@ -1066,10 +1130,10 @@ const App = (function () {
       html += `
         <div class="goal-card ${dim}">
           <div class="goal-card-header">
-            <span class="dim-tag ${dim}">${DIMENSIONS[dim].name}</span>
+            <span class="dim-tag ${dim}">${dimConfig(dim).name}</span>
             <span class="goal-count">${total} 个任务</span>
           </div>
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${DIMENSIONS[dim].accent}"></div></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${dimConfig(dim).accent}"></div></div>
           <div style="text-align:right;font-size:12px;margin-top:4px;font-weight:600;" class="num">${pct}%</div>
         </div>
       `;
@@ -1077,18 +1141,23 @@ const App = (function () {
 
     html += `</div></div>`;
 
-    // 各月完成率（按周目标累计）
-    html += `<div class="card" style="margin-bottom:24px;"><div class="card-title"><span>各月完成率（按周目标累计）</span></div><div class="year-rate-bars">`;
-    for (let m = 0; m < 12; m++) {
-      const r = monthCompletionRate(year, m);
-      const pct = Math.round(r * 100);
-      html += `<div class="yr-bar-col">
-        <div class="yr-bar-num">${pct}%</div>
-        <div class="yr-bar-track"><div class="yr-bar-fill" style="height:${pct}%;background:var(--theme-color)"></div></div>
-        <div class="yr-bar-month">${m + 1}月</div>
-      </div>`;
+    // 各月完成率（按周目标累计，容错：完成率统计链崩了也显示提示文字）
+    try {
+      html += `<div class="card" style="margin-bottom:24px;"><div class="card-title"><span>各月完成率（按周目标累计）</span></div><div class="year-rate-bars">`;
+      for (let m = 0; m < 12; m++) {
+        const r = monthCompletionRate(year, m);
+        const pct = Math.round(r * 100);
+        html += `<div class="yr-bar-col">
+          <div class="yr-bar-num">${pct}%</div>
+          <div class="yr-bar-track"><div class="yr-bar-fill" style="height:${pct}%;background:var(--theme-color)"></div></div>
+          <div class="yr-bar-month">${m + 1}月</div>
+        </div>`;
+      }
+      html += `</div><div class="cr-caption" style="margin-top:10px;">年度完成率 = 12 个月完成率的平均：<b>${Math.round(yearCompletionRate(year) * 100)}%</b></div></div>`;
+    } catch (e) {
+      console.error('[review-year] 完成率统计降级：', e);
+      html += `<div class="card" style="margin-bottom:24px;"><div class="card-title"><span>各月完成率（按周目标累计）</span></div><div class="empty-hint">完成率统计暂不可用</div></div>`;
     }
-    html += `</div><div class="cr-caption" style="margin-top:10px;">年度完成率 = 12 个月完成率的平均：<b>${Math.round(yearCompletionRate(year) * 100)}%</b></div></div>`;
 
     // 月度完成热力图
     html += `<div class="chart-container"><div class="card-title"><span>月度完成热力图</span></div><div class="heatmap">`;
@@ -1585,24 +1654,39 @@ const App = (function () {
     const root = document.documentElement;
     const packId = s.themePack || 'default';
     root.setAttribute('data-theme', packId);
-    // 清除上一轮的自定义内联变量，避免残留
-    ['--theme-primary', '--theme-bg', '--theme-card', '--theme-accent'].forEach(function (v) { root.style.removeProperty(v); });
-    let primary;
+    // 统一解析当前主题的 4 个维度（default / 预设包 / 自定义 一致处理）——真正实现整页联动
+    let primary, bg, card, accent, isDark = false;
     if (packId === 'custom' && s.customTheme) {
-      root.style.setProperty('--theme-primary', s.customTheme.primary);
-      root.style.setProperty('--theme-bg', s.customTheme.bg);
-      root.style.setProperty('--theme-card', s.customTheme.card);
-      root.style.setProperty('--theme-accent', s.customTheme.accent);
-      primary = s.customTheme.primary;
+      primary = s.customTheme.primary; bg = s.customTheme.bg; card = s.customTheme.card; accent = s.customTheme.accent;
     } else {
-      const pack = THEME_PACKS[packId];
-      primary = pack ? pack.primary : (s.themeColor || '#333333');
+      const pack = THEME_PACKS[packId] || THEME_PACKS.default;
+      primary = pack.primary; bg = pack.bg; card = pack.card; accent = pack.accent;
+      isDark = (packId === 'dark');
     }
-    // 进度条 / 导航底色等继续跟随 --theme-color 联动
-    document.documentElement.style.setProperty('--theme-color', primary);
+    // 主色系
+    root.style.setProperty('--theme-primary', primary);
+    root.style.setProperty('--theme-color', primary);
+    // 背景 / 卡片 / 强调 —— 写入全局变量，body、卡片、导航、图表等皆跟随
+    root.style.setProperty('--theme-bg', bg);
+    root.style.setProperty('--bg-page', bg);
+    root.style.setProperty('--theme-card', card);
+    root.style.setProperty('--bg-card', card);
+    root.style.setProperty('--theme-accent', accent);
+    root.style.setProperty('--accent', accent);
+    // 文字 / 分割线：深色模式转浅，保证可读
+    if (isDark) {
+      root.style.setProperty('--text-primary', '#E6E6EA');
+      root.style.setProperty('--text-secondary', '#A0A0A8');
+      root.style.setProperty('--border-color', '#3A3A42');
+    } else {
+      root.style.setProperty('--text-primary', '#4A4A4A');
+      root.style.setProperty('--text-secondary', '#9A9A9A');
+      root.style.setProperty('--border-color', '#EEEEEE');
+    }
+    // 导航底色 tint（顶部栏 / 底部栏 / hover 可引用）
     const rgb = hexToRgb(primary);
-    document.documentElement.style.setProperty('--nav-bg', `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.12)`);
-    document.documentElement.style.setProperty('--nav-bg-solid', `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.9)`);
+    root.style.setProperty('--nav-bg', `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.12)`);
+    root.style.setProperty('--nav-bg-solid', `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, 0.9)`);
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', primary);
   }
@@ -4393,8 +4477,14 @@ const App = (function () {
       // 不强制弹窗打扰，仅在用户开启提醒时已由打卡流程触发；此处仅预置
     }
 
-    // 渲染初始页面：冷启动一律进入首页（不沿用上次模块，保证每次打开都落在首页）
-    switchModule('home');
+    // 渲染初始页面：若 URL 带 #模块（如从灵感详情 history.back() 返回），恢复该模块；
+    // 否则冷启动进入首页
+    var initialModule = 'home';
+    try {
+      var _h = decodeURIComponent((location.hash || '').replace(/^#/, '')).trim();
+      if (_h && document.getElementById(_h + 'Module')) initialModule = _h;
+    } catch (e) {}
+    switchModule(initialModule);
 
     // PWA 自动更新提示（Service Worker 接管后已静默刷新，这里告知用户）
     try {
