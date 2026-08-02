@@ -3462,9 +3462,14 @@ const App = (function () {
   }
   function togglePeriodDay(ds) {
     const was = Store.Health.isPeriodDay(ds);
-    Store.Health.togglePeriod(ds, []);
-    render(); // 立即重绘日历，格子变色/取消即时可见（无论新增或取消都先刷新视图）
-    if (!was) showPeriodSymptomModal(ds); // 新增经期再弹症状窗（叠加在已更新的日历之上）
+    if (was) {
+      // 已记录 → 再次点击即取消该日记录（立即移除并重绘）
+      Store.Health.togglePeriod(ds, []);
+      render();
+    } else {
+      // 未记录 → 仅弹症状窗；点「保存」才真正记录（添加+变色），点「稍后」= 取消，日历不变色
+      showPeriodSymptomModal(ds);
+    }
   }
   function setCycleLength(v) {
     Store.Health.setCycleLength(v);

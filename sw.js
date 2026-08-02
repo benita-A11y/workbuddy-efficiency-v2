@@ -1,8 +1,7 @@
-// Service Worker - 离线优先但导航走网络优先（v35：根治“改了样式刷新看不到”——
-// 对非导航静态资源(css/js/数据/图标)由 cache-first 改为 NETWORK-FIRST + cache:'reload'，
-// 绕过 GitHub Pages 的 10 分钟 HTTP 缓存，保证用户每次刷新都拿到服务器最新文件；
-// 仅网络不可用时退回缓存，维持离线可用。注册端加 updateViaCache:'none' 让 SW 自身及时更新。）
-const CACHE_NAME = 'efficiency-app-v35';
+// Service Worker - 离线优先但导航走网络优先（v36：修复经期记录交互写反——
+// 点未记录格子只弹症状窗，点「保存」才真正添加记录变色+弹"已记录"，点「稍后」=取消不变色；
+// 已记录格子再点即取消记录。继承 v35 network-first 缓存根治"刷新看不到"。）
+const CACHE_NAME = 'efficiency-app-v36';
 const ASSETS = [
   './',
   './index.html',
