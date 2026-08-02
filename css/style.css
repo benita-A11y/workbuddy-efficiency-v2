@@ -1815,12 +1815,12 @@ body {
 .cal-wk { text-align: center; font-size: 11px; color: var(--text-tertiary); padding-bottom: 4px; }
 .cal-cell {
   aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
-  font-size: 13px; border-radius: 10px; background: var(--bg-page); color: var(--text-primary);
+  font-size: 13px; border-radius: 10px; background: #fff; color: var(--text-primary);
   cursor: pointer; position: relative; transition: all 0.15s;
 }
 .cal-cell.empty { background: transparent; cursor: default; }
-.cal-cell.today { box-shadow: inset 0 0 0 2px var(--theme-color); }
-.cal-cell.period-day { background: rgba(244,143,177,0.55); color: #880e4f; font-weight: 700; }
+.cal-cell.today { box-shadow: 0 0 0 2px #B8C5D6; }
+.cal-cell.period-day { background: #F5D9E7; color: #C2688A; font-weight: 700; }
 .cal-cell.bowel-day { background: rgba(52,179,160,0.18); }
 .bowel-badge { position: absolute; bottom: 1px; right: 3px; font-size: 9px; }
 .annual-title { font-size: 13px; font-weight: 600; margin: 16px 0 8px; }
@@ -1828,8 +1828,8 @@ body {
 .annual-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .annual-m { width: 38px; font-size: 11px; color: var(--text-secondary); flex: none; }
 .annual-cells { display: flex; gap: 2px; flex: 1; }
-.annual-cell { width: 11px; height: 11px; border-radius: 3px; background: #fff; flex: none; cursor: pointer; }
-.annual-cell.on { background: rgba(244,143,177,0.7); }
+.annual-cell { width: 12px; height: 12px; border-radius: 4px; background: #fff; border: 1px solid #ececec; box-sizing: border-box; flex: none; cursor: pointer; }
+.annual-cell.on { background: #F5D9E7; border-color: #F5D9E7; }
 
 /* 排便 */
 .bowel-today { text-align: center; font-size: 15px; color: var(--text-secondary); margin: 10px 0; }

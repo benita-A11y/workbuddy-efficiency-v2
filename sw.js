@@ -1,7 +1,7 @@
-// Service Worker - 离线优先但导航走网络优先（v33：新增消费小记独立页面 finance.html —— 日/周/月/年视图+统计+明细+扇形图，分类精简易自定义；升版强刷缓存）
+// Service Worker - 离线优先但导航走网络优先（v34：经期月历/年历可视化 —— 记录日柔和粉 #F5D9E7 填充、无记录白色、今日外圈浅色细圈；消费小记 v33 同在内）
 // 核心修复：对 index.html 等导航请求采用 NETWORK-FIRST，保证用户永远拿到最新 HTML；
 // 其它静态资源（css/js/data/图标）仍 cache-first + 后台更新，保证离线可用与加载速度。
-const CACHE_NAME = 'efficiency-app-v33';
+const CACHE_NAME = 'efficiency-app-v34';
 const ASSETS = [
   './',
   './index.html',
