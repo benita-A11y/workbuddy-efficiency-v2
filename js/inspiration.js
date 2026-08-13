@@ -1,157 +1,207 @@
 /* =========================================================================
- * 灵感专区 — 交互逻辑 (Inspiration Zone UI)  ·  小红书风格改版
- * 完全独立模块：仅依赖 InspirationDB 与自身 DOM，不引用平台原有任何代码。
- * 新增：自定义分类(emoji+管理页)、缩略图序号+拖拽排序、卡片胶囊/标签/日期、
- *       详情轮播圆点指示器、预设快捷标签、字数上限。
- * 图片仍以 Blob 存入 IndexedDB，与系统相册完全解耦（删原图不影响 App 内数据）。
+ * 灵感专区 — 交互逻辑 (Inspiration Zone UI)  v3  ·  小红书/Instagram 风格
+ * 单一数据源、自注入完整 UI：列表(看板) + 编辑弹窗 + 合集管理 + 标签筛选
+ * + 回收站 + 备份/导入(合并) + 草稿自动存 + 滚动恢复。
+ * 依赖 InspirationDB（合集/笔记/图片均在独立 IndexedDB）。不引用平台其它代码。
  * ========================================================================= */
 (function () {
   'use strict';
 
   var DB = window.InspirationDB;
-
-  /* ---------- 小工具 ---------- */
-  function $(id) { return document.getElementById(id); }
+  var $ = function (id) { return document.getElementById(id); };
   function el(tag, cls) { var e = document.createElement(tag); if (cls) e.className = cls; return e; }
   function revokeAll(arr) { (arr || []).forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} }); }
   function esc(s) { return (s == null ? '' : String(s)); }
 
+  /* ---------- 模板（自注入，保证内嵌/独立页一致） ---------- */
+  var TEMPLATE = [
+    '<div class="insp-app" id="inspApp">',
+    '  <header class="insp-header">',
+    '    <button class="insp-home" id="inspHome" aria-label="返回">←</button>',
+    '    <h1 class="insp-title">✨ 灵感</h1>',
+    '    <div class="insp-header-actions">',
+    '      <button class="insp-icon-btn" id="inspSearchBtn" aria-label="搜索">🔍</button>',
+    '      <button class="insp-icon-btn" id="inspMore" aria-label="更多">⋯</button>',
+    '    </div>',
+    '    <div class="insp-more-menu" id="inspMoreMenu" hidden>',
+    '      <button id="exportMenuItem">⬇ 导出备份</button>',
+    '      <button id="importMenuItem">⬆ 导入备份</button>',
+    '      <button id="trashMenuItem">🗑 回收站</button>',
+    '      <button id="manageColMenuItem">🗂 管理合集</button>',
+    '    </div>',
+    '  </header>',
+    '  <div class="insp-searchbar" id="inspSearchbar" hidden>',
+    '    <input id="inspSearchInput" placeholder="搜索标题、内容、标签…" aria-label="搜索">',
+    '    <button id="inspSearchClose" class="insp-search-close">取消</button>',
+    '  </div>',
+    '  <div class="insp-cat-bar" id="inspCatBar"></div>',
+    '  <div class="insp-tag-bar" id="inspTagBar" hidden></div>',
+    '  <main class="insp-main" id="inspMain">',
+    '    <div class="insp-waterfall" id="inspWaterfall"></div>',
+    '    <div class="insp-empty" id="inspEmpty" hidden>',
+    '      <div class="insp-empty-emoji">🌿</div>',
+    '      <p>这里收藏你的灵感</p>',
+    '      <p class="insp-empty-sub">点击右下角「＋」开始记录</p>',
+    '    </div>',
+    '  </main>',
+    '  <button class="insp-fab" id="inspFab" aria-label="新建灵感">＋</button>',
+    '  <div class="insp-modal insp-modal--fullscreen" id="noteModal" hidden>',
+    '    <div class="insp-modal-card">',
+    '      <div class="insp-modal-head">',
+    '        <button id="noteModalClose" aria-label="关闭">✕</button>',
+    '        <span id="noteModalTitle">新建灵感</span>',
+    '        <span style="width:28px"></span>',
+    '      </div>',
+    '      <div class="insp-modal-body">',
+    '        <div class="insp-uploader">',
+    '          <div class="insp-thumbs" id="noteThumbs"></div>',
+    '          <label class="insp-add-thumb">＋ 图片<input type="file" accept="image/*" multiple id="noteImgInput" hidden></label>',
+    '        </div>',
+    '        <input class="insp-input" id="noteTitle" placeholder="标题（选填）" maxlength="60">',
+    '        <textarea class="insp-textarea" id="noteBody" placeholder="记录搭配思路、妆容心得、色号、场景、季节、购买链接…" maxlength="2000"></textarea>',
+    '        <div class="insp-field">',
+    '          <span class="insp-label">合集（必选）</span>',
+    '          <div class="insp-cat-options" id="noteColOptions"></div>',
+    '          <button class="insp-text-btn" id="noteColManage">🗂 管理合集</button>',
+    '        </div>',
+    '        <div class="insp-field">',
+    '          <span class="insp-label">标签（可多个，回车添加）</span>',
+    '          <div class="insp-tag-chips" id="noteTagChips"></div>',
+    '          <div class="insp-tag-add">',
+    '            <input id="noteTagInput" placeholder="如 通勤 / 约会 / 黄皮">',
+    '            <button class="insp-btn-primary insp-btn-sm" id="noteTagAdd">添加</button>',
+    '          </div>',
+    '          <div class="insp-tag-presets" id="noteTagPresets"></div>',
+    '        </div>',
+    '      </div>',
+    '      <div class="insp-modal-foot">',
+    '        <button class="insp-btn-ghost" id="noteSaveDraft">存草稿</button>',
+    '        <button class="insp-btn-primary" id="notePublish">完成</button>',
+    '      </div>',
+    '    </div>',
+    '  </div>',
+    '  <div class="insp-modal" id="colModal" hidden>',
+    '    <div class="insp-modal-card">',
+    '      <div class="insp-modal-head"><button id="colModalClose" aria-label="关闭">✕</button><span>管理合集</span><span style="width:28px"></span></div>',
+    '      <div class="insp-modal-body"><div class="insp-col-list" id="colList"></div></div>',
+    '      <div class="insp-modal-foot"><button class="insp-btn-primary" id="colModalAdd">＋ 新建合集</button></div>',
+    '    </div>',
+    '  </div>',
+    '  <div class="insp-modal" id="colEditModal" hidden>',
+    '    <div class="insp-modal-card insp-modal-card--sm">',
+    '      <div class="insp-modal-head"><button id="colEditClose" aria-label="关闭">✕</button><span id="colEditTitle">新建合集</span><span style="width:28px"></span></div>',
+    '      <div class="insp-modal-body">',
+    '        <div class="insp-emoji-grid" id="colEditEmojiGrid"></div>',
+    '        <input class="insp-input" id="colEditName" placeholder="合集名称" maxlength="12">',
+    '      </div>',
+    '      <div class="insp-modal-foot">',
+    '        <button class="insp-btn-ghost" id="colEditDelete" hidden>删除</button>',
+    '        <button class="insp-btn-primary" id="colEditSave">保存</button>',
+    '      </div>',
+    '    </div>',
+    '  </div>',
+    '  <div class="insp-modal" id="tagModal" hidden>',
+    '    <div class="insp-modal-card">',
+    '      <div class="insp-modal-head"><button id="tagModalClose" aria-label="关闭">✕</button><span>按标签筛选</span><span style="width:28px"></span></div>',
+    '      <div class="insp-modal-body"><div class="insp-tag-list" id="tagModalList"></div></div>',
+    '      <div class="insp-modal-foot"><button class="insp-btn-primary" id="tagModalDone">完成</button></div>',
+    '    </div>',
+    '  </div>',
+    '  <div class="insp-modal insp-modal--trash" id="trashModal" hidden>',
+    '    <div class="insp-modal-card insp-modal-card--lg">',
+    '      <div class="insp-modal-head"><button id="trashModalClose" aria-label="关闭">✕</button><span>回收站（30 天内可恢复）</span><span style="width:28px"></span></div>',
+    '      <div class="insp-modal-body"><div class="insp-trash-list" id="trashList"></div></div>',
+    '    </div>',
+    '  </div>',
+    '  <div class="insp-modal insp-modal--confirm" id="confirmModal" hidden>',
+    '    <div class="insp-confirm-card">',
+    '      <p id="confirmMsg"></p>',
+    '      <p id="confirmSub" class="insp-confirm-sub" hidden></p>',
+    '      <div class="insp-confirm-actions">',
+    '        <button class="insp-btn-ghost" id="confirmCancel">取消</button>',
+    '        <button class="insp-btn-primary" id="confirmOk">确定</button>',
+    '      </div>',
+    '    </div>',
+    '  </div>',
+    '  <input type="file" id="importFile" accept="application/json" hidden>',
+    '  <div class="insp-toast" id="inspToast" hidden></div>',
+    '</div>'
+  ].join('\n');
+
+  /* ---------- 小工具 ---------- */
   var toastTimer = null;
   function toast(msg) {
     var t = $('inspToast'); if (!t) return;
-    t.textContent = msg; t.hidden = false; t.classList.add('show');
+    t.textContent = msg; t.hidden = false;
+    requestAnimationFrame(function () { t.classList.add('show'); });
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.classList.remove('show'); setTimeout(function () { t.hidden = true; }, 250); }, 1800);
   }
-
-  // 统一走全局温柔反馈横幅；若 App.feedback 不可用则回退到本地 toast
   function gentle(item) {
     var g = window.App;
     if (g && typeof g.feedback === 'function') { g.feedback(item); return; }
     toast(typeof item === 'string' ? item : ((item && item.title) || ''));
   }
-
   function pad(n) { return (n < 10 ? '0' : '') + n; }
-  function dateZh(iso) {
-    if (!iso) return '';
-    var d = new Date(iso); if (isNaN(d)) return '';
-    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
-  }
   function dateDot(iso) {
     if (!iso) return '';
     var d = new Date(iso); if (isNaN(d)) return '';
     return d.getFullYear() + '.' + pad(d.getMonth() + 1) + '.' + pad(d.getDate());
   }
-  function formatTime(iso) {
+  function dateZh(iso) {
     if (!iso) return '';
     var d = new Date(iso); if (isNaN(d)) return '';
-    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
-  }
-  function dateStr() {
-    var d = new Date(); return d.getFullYear() + pad(d.getMonth() + 1) + pad(d.getDate());
+    return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
   }
   function genId(prefix) { return (prefix || 'id') + '_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
 
-  /* ---------- 分类数据（localStorage，独立于笔记） ---------- */
-  var CAT_KEY = 'wb_insp_categories_v1';
-  var DEFAULT_CATS = [
-    { id: 'outfit', name: '穿搭灵感', emoji: '👗', fixed: true },
-    { id: 'makeup', name: '妆容灵感', emoji: '💄', fixed: true }
-  ];
-  var EMOJI_CHOICES = ['👗','💄','🏠','✈️','🎨','🌸','🍜','🎵','📱','📚','💡','🌿','🐱','👟','👜','💍','🧴','☕','🍰','🌟','💼','🎬','🌈','🔥'];
-  var cats = [];
-  var UNCATEGORIZED = { id: 'uncategorized', name: '未分类', emoji: '📁', fixed: true };
-
-  function loadCats() {
-    try {
-      var raw = localStorage.getItem(CAT_KEY);
-      if (raw) { cats = JSON.parse(raw); return; }
-    } catch (e) {}
-    cats = DEFAULT_CATS.map(function (c) { return Object.assign({}, c); });
-    persistCats();
-  }
-  function persistCats() {
-    try { localStorage.setItem(CAT_KEY, JSON.stringify(cats)); } catch (e) {}
-  }
-  function getCats() { return cats.slice(); }
-  function catInfo(id) {
-    for (var i = 0; i < cats.length; i++) if (cats[i].id === id) return cats[i];
-    if (id === 'uncategorized') return UNCATEGORIZED;
-    return UNCATEGORIZED;
-  }
-  function addCategory(name, emoji) {
-    var c = { id: genId('cat'), name: name, emoji: emoji || '📁', fixed: false };
-    cats.push(c); persistCats(); return c;
-  }
-  function updateCategory(id, name, emoji) {
-    for (var i = 0; i < cats.length; i++) {
-      if (cats[i].id === id) { cats[i].name = name; if (emoji) cats[i].emoji = emoji; break; }
-    }
-    persistCats();
-  }
-  function removeCategory(id) {
-    cats = cats.filter(function (c) { return c.id !== id; });
-    persistCats();
-  }
+  var EMOJI_CHOICES = ['👗','💄','🏠','✈️','🎨','🌸','🍜','🎵','📱','📚','💡','🌿','🐱','👟','👜','💍','🧴','☕','🍰','🌟','💼','🎬','🌈','🔥','🍃','🌷','🪴','🧥','👠','💅'];
+  var PRESET_TAGS = ['通勤','校园','约会','秋冬','极简','法式','复古','运动','淡颜','日常妆','约会妆','伪素颜','复古妆','欧美妆','黄皮','显白','高级感','小个子'];
 
   /* ---------- 状态 ---------- */
+  var EMBEDDED = false;
   var state = { cat: 'all', tag: '', q: '' };
-  var editing = null;            // 新建/编辑会话
-  var cardUrls = {};             // noteId -> objectURL（瀑布流封面，缩略图）
-  var detailUrls = [];           // 详情轮播 objectURL
-  var lightboxIndex = 0;
-  var currentDetail = null;
-  var detailDots = [];           // 详情轮播圆点元素
-  var dragFrom = null;           // 缩略图拖拽源索引
-  var catDragFrom = null;        // 分类管理拖拽源索引
-  var editingCat = null;         // 分类编辑会话 {id,name,emoji,fixed}
+  var collections = [];           // DB 合集
+  var editing = null;
+  var cardUrls = {};
+  var allNotes = [];
+  var currentList = [];
+  var PAGE = 24;
+  var renderedCount = 0;
+  var lastOpenTs = 0;
+  var dragFrom = null;
+  var editingCol = null;
+  var colDragFrom = null;
+  var SCROLL_KEY = 'wb_insp_scroll';
 
-  /* ---------- 性能优化：内存缓存 + 分页 ---------- */
-  var noteCache = {};            // id -> note（点击详情毫秒级读取）
-  var allNotes = [];             // 最近一次全部有效笔记（标签聚合用）
-  var currentList = [];          // 当前筛选后的列表（内存）
-  var PAGE = 20;                 // 每批渲染数量
-  var renderedCount = 0;         // 已渲染数量
-  var lastOpenTs = 0;            // 点击防抖时间戳
+  function colInfo(id) { return DB.collectionInfo(id, collections); }
 
   /* ---------- 图片处理 ---------- */
   function readImageMeta(file) {
     return new Promise(function (res) {
-      var url = URL.createObjectURL(file);
-      var img = new Image();
+      var url = URL.createObjectURL(file), img = new Image();
       img.onload = function () { res({ w: img.naturalWidth, h: img.naturalHeight }); URL.revokeObjectURL(url); };
       img.onerror = function () { res({ w: 0, h: 0 }); URL.revokeObjectURL(url); };
       img.src = url;
     });
   }
-  // 生成 200px 宽 WebP 缩略图（瀑布流封面用），失败回退原图
   function makeThumbnail(file, maxW) {
-    maxW = maxW || 200;
+    maxW = maxW || 400;
     return new Promise(function (res, rej) {
-      var url = URL.createObjectURL(file);
-      var img = new Image();
+      var url = URL.createObjectURL(file), img = new Image();
       img.onload = function () {
         var w = img.naturalWidth || maxW, h = img.naturalHeight || maxW;
         var tw = Math.min(maxW, w), th = Math.max(1, Math.round(h * (tw / w)));
-        var canvas = document.createElement('canvas');
-        canvas.width = tw; canvas.height = th;
+        var canvas = document.createElement('canvas'); canvas.width = tw; canvas.height = th;
         try { canvas.getContext('2d').drawImage(img, 0, 0, tw, th); } catch (e) {}
         URL.revokeObjectURL(url);
-        var done = function (blob) { if (blob) res(blob); else rej(new Error('thumb null')); };
-        if (canvas.toBlob) {
-          canvas.toBlob(function (blob) {
-            if (blob) res(blob);
-            else canvas.toBlob(done, 'image/png');
-          }, 'image/webp', 0.8);
-        } else {
-          try { canvas.toBlob(done, 'image/png'); } catch (e) { rej(e); }
-        }
+        if (canvas.toBlob) canvas.toBlob(function (b) { if (b) res(b); else rej(new Error('thumb null')); }, 'image/webp', 0.82);
+        else { try { canvas.toBlob(function (b) { if (b) res(b); else rej(new Error('thumb null')); }, 'image/png'); } catch (e) { rej(e); } }
       };
       img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('thumb decode fail')); };
       img.src = url;
     });
   }
-
   function addImageFromFile(file) {
     return readImageMeta(file).then(function (m) {
       return DB.addImage(file, file.type, m.w, m.h).then(function (id) {
@@ -161,9 +211,7 @@
           return makeThumbnail(file).then(function (tb) {
             info.thumbUrl = URL.createObjectURL(tb);
             return DB.addThumbnail(tb, tb.type || 'image/webp', m.w, m.h).then(function (tid) { info.thumbId = tid; return info; });
-          }).catch(function () {
-            info.thumbUrl = info.url; info.thumbId = null; return info;
-          });
+          }).catch(function () { info.thumbUrl = info.url; info.thumbId = null; return info; });
         });
       });
     });
@@ -177,7 +225,7 @@
     });
   }
 
-  /* ---------- 瀑布流渲染（筛选 + 分页 + 缩略图 + 内存缓存） ---------- */
+  /* ---------- 瀑布流 ---------- */
   function revokeCardUrls() { revokeAll(Object.keys(cardUrls).map(function (k) { return cardUrls[k]; })); cardUrls = {}; }
 
   function matchQuery(n, q) {
@@ -190,7 +238,7 @@
   }
   function filterNotes(notes) {
     return notes.filter(function (n) {
-      if (state.cat !== 'all' && n.category !== state.cat) return false;
+      if (state.cat !== 'all' && (n.category || 'uncategorized') !== state.cat) return false;
       if (state.tag && (!n.tags || n.tags.indexOf(state.tag) < 0)) return false;
       if (!matchQuery(n, state.q)) return false;
       return true;
@@ -199,29 +247,30 @@
   function tagsForCurrentCat() {
     var set = {};
     allNotes.forEach(function (n) {
-      if (state.cat !== 'all' && n.category !== state.cat) return;
+      if (state.cat !== 'all' && (n.category || 'uncategorized') !== state.cat) return;
       (n.tags || []).forEach(function (t) { set[t] = 1; });
     });
     return Object.keys(set).sort();
   }
 
-  // 一级分类栏（横向滚动）
   function renderCatBar() {
     var bar = $('inspCatBar'); if (!bar) return; bar.innerHTML = '';
     var all = el('button', 'insp-cat-tab' + (state.cat === 'all' ? ' active' : ''));
     all.dataset.cat = 'all'; all.textContent = '全部'; bar.appendChild(all);
-    getCats().forEach(function (c) {
+    collections.forEach(function (c) {
       var b = el('button', 'insp-cat-tab' + (state.cat === c.id ? ' active' : ''));
       b.dataset.cat = c.id; b.textContent = c.emoji + ' ' + c.name; bar.appendChild(b);
     });
     var add = el('button', 'insp-cat-tab insp-cat-tab-new'); add.dataset.cat = '__new'; add.textContent = '＋'; bar.appendChild(add);
   }
-  // 二级标签栏（横向滚动）
   function renderTagBar() {
     var bar = $('inspTagBar'); if (!bar) return; bar.innerHTML = '';
+    var tags = tagsForCurrentCat();
+    if (!tags.length) { bar.hidden = true; return; }
+    bar.hidden = false;
     var all = el('button', 'insp-tag-tab' + (state.tag === '' ? ' active' : ''));
     all.dataset.tag = ''; all.textContent = '全部'; bar.appendChild(all);
-    tagsForCurrentCat().forEach(function (t) {
+    tags.forEach(function (t) {
       var b = el('button', 'insp-tag-tab' + (state.tag === t ? ' active' : ''));
       b.dataset.tag = t; b.textContent = '#' + t; bar.appendChild(b);
     });
@@ -240,30 +289,22 @@
       allNotes = notes;
       var filtered = filterNotes(notes);
       currentList = filtered;
-      filtered.forEach(function (n) { noteCache[n.id] = n; });
-      renderCatBar();
-      renderTagBar();
-
+      renderCatBar(); renderTagBar();
       revokeCardUrls();
-      var waterfall = $('inspWaterfall');
-      waterfall.innerHTML = '';
+      var waterfall = $('inspWaterfall'); waterfall.innerHTML = '';
       renderedCount = 0;
-      if (!filtered.length) { $('inspEmpty').hidden = false; } else { $('inspEmpty').hidden = true; }
+      $('inspEmpty').hidden = filtered.length > 0;
       appendNextPage();
-      restoreInspScroll(); // 从详情返回时恢复瀑布流滚动位置
+      // 从详情返回时恢复瀑布流滚动位置
+      if (EMBEDDED) restoreInspScroll();
     });
   }
-
   function appendNextPage() {
     if (renderedCount >= currentList.length) return;
-    var start = renderedCount;
-    var end = Math.min(start + PAGE, currentList.length);
+    var start = renderedCount, end = Math.min(start + PAGE, currentList.length);
     var page = currentList.slice(start, end);
     Promise.all(page.map(function (n) {
-      return loadCoverThumb(n).then(function (url) {
-        if (url) cardUrls[n.id] = url;
-        return n;
-      }).catch(function () { return n; });
+      return loadCoverThumb(n).then(function (url) { if (url) cardUrls[n.id] = url; return n; }).catch(function () { return n; });
     })).then(function (list) {
       var waterfall = $('inspWaterfall');
       list.forEach(function (n) { waterfall.appendChild(cardEl(n)); });
@@ -282,32 +323,27 @@
         var cnt = el('div', 'insp-card-count'); cnt.textContent = '1/' + note.imageRefs.length; card.appendChild(cnt);
       }
     } else {
-      var c = catInfo(note.category);
+      var c = colInfo(note.category);
       var ph = el('div', 'insp-card-ph'); ph.textContent = c.emoji; card.appendChild(ph);
     }
     var body = el('div', 'insp-card-body');
     if (note.title) { var t = el('div', 'insp-card-title'); t.textContent = note.title; body.appendChild(t); }
     if (note.body) { var d = el('div', 'insp-card-desc'); d.textContent = note.body; body.appendChild(d); }
+    var c2 = colInfo(note.category);
     var foot = el('div', 'insp-card-foot');
-    var c2 = catInfo(note.category);
-    var cat = el('span', 'insp-pill'); cat.textContent = c2.emoji + ' ' + c2.name; foot.appendChild(cat);
+    var col = el('span', 'insp-pill'); col.textContent = c2.emoji + ' ' + c2.name; foot.appendChild(col);
     body.appendChild(foot);
     if (note.tags && note.tags.length) {
       var tags = el('div', 'insp-card-tags');
-      note.tags.slice(0, 4).forEach(function (tg) { var s = el('span', 'insp-mini-tag'); s.textContent = '#' + tg; tags.appendChild(s); });
+      note.tags.slice(0, 3).forEach(function (tg) { var s = el('span', 'insp-mini-tag'); s.textContent = '#' + tg; tags.appendChild(s); });
       body.appendChild(tags);
     }
-    var dt = el('div', 'insp-card-date'); dt.textContent = '📅 ' + dateDot(note.createdAt); body.appendChild(dt);
+    body.appendChild(el('div', 'insp-card-date')).textContent = '📅 ' + dateDot(note.createdAt);
     card.appendChild(body);
     return card;
   }
 
-  /* ---------- 新建 / 编辑 笔记 ---------- */
-  var PRESET_TAGS = ['通勤', '校园', '约会', '秋冬', '极简', '法式', '复古', '运动', '淡颜', '日常妆', '约会妆', '伪素颜', '复古妆', '欧美妆'];
-
-  function isDraftMeaningful(d) {
-    return (d && (d.title || d.body || d.category || (d.tags && d.tags.length) || (d.imageIds && d.imageIds.length)));
-  }
+  /* ---------- 编辑笔记 ---------- */
   function snapshotDraft() {
     return {
       title: $('noteTitle').value.trim(),
@@ -317,35 +353,31 @@
       imageIds: editing.images.map(function (i) { return i.id; })
     };
   }
+  function isDraftMeaningful(d) {
+    return (d && (d.title || d.body || d.category || (d.tags && d.tags.length) || (d.imageIds && d.imageIds.length)));
+  }
   var draftTimer = null;
   function saveDraftAuto() {
     if (!$('noteModal').hidden && isDraftMeaningful(snapshotDraft())) {
       clearTimeout(draftTimer);
-      draftTimer = setTimeout(function () { DB.saveDraft(snapshotDraft()); }, 600);
+      draftTimer = setTimeout(function () { DB.saveDraft(snapshotDraft()).catch(function () {}); }, 600);
     }
   }
   function saveDraftNow() {
     if (!isDraftMeaningful(snapshotDraft())) { toast('还没有可保存的内容'); return; }
-    DB.saveDraft(snapshotDraft()).then(function () { toast('草稿已保存'); });
+    DB.saveDraft(snapshotDraft()).then(function () { toast('草稿已保存'); }, function () { toast('草稿保存失败'); });
   }
 
   function renderThumbs() {
     var box = $('noteThumbs'); box.innerHTML = '';
     var total = editing.images.length;
     editing.images.forEach(function (im, idx) {
-      var th = el('div', 'insp-thumb');
-      th.draggable = true;
+      var th = el('div', 'insp-thumb'); th.draggable = true;
       var img = el('img'); img.src = im.url; th.appendChild(img);
       var badge = el('span', 'insp-thumb-badge'); badge.textContent = (idx + 1) + '/' + total; th.appendChild(badge);
-      var del = el('button', 'insp-thumb-del'); del.textContent = '×'; del.type = 'button';
-      del.onclick = function (e) {
-        e.stopPropagation();
-        URL.revokeObjectURL(im.url);
-        editing.images.splice(idx, 1);
-        renderThumbs(); saveDraftAuto();
-      };
+      var del = el('button', 'insp-thumb-del'); del.type = 'button'; del.textContent = '×';
+      del.onclick = function (e) { e.stopPropagation(); URL.revokeObjectURL(im.url); editing.images.splice(idx, 1); renderThumbs(); saveDraftAuto(); };
       th.appendChild(del);
-      // 拖拽排序
       th.addEventListener('dragstart', function (e) { dragFrom = idx; th.classList.add('dragging'); try { e.dataTransfer.effectAllowed = 'move'; } catch (err) {} });
       th.addEventListener('dragend', function () { th.classList.remove('dragging'); dragFrom = null; });
       th.addEventListener('dragover', function (e) { e.preventDefault(); });
@@ -353,8 +385,7 @@
         e.preventDefault();
         if (dragFrom === null || dragFrom === idx) return;
         var moved = editing.images.splice(dragFrom, 1)[0];
-        editing.images.splice(idx, 0, moved);
-        renderThumbs(); saveDraftAuto();
+        editing.images.splice(idx, 0, moved); renderThumbs(); saveDraftAuto();
       });
       box.appendChild(th);
     });
@@ -362,8 +393,7 @@
   function renderTagChips() {
     var box = $('noteTagChips'); box.innerHTML = '';
     editing.tags.forEach(function (t, idx) {
-      var chip = el('span', 'insp-tag insp-tag-removable');
-      chip.textContent = '#' + t;
+      var chip = el('span', 'insp-tag insp-tag-removable'); chip.textContent = '#' + t;
       var x = el('span', 'insp-tag-x'); x.textContent = '×';
       x.onclick = function () { editing.tags.splice(idx, 1); renderTagChips(); saveDraftAuto(); };
       chip.appendChild(x); box.appendChild(chip);
@@ -372,61 +402,51 @@
   function renderPresetTags() {
     var box = $('noteTagPresets'); if (!box) return; box.innerHTML = '';
     PRESET_TAGS.forEach(function (t) {
-      var chip = el('button', 'insp-tag insp-tag-preset'); chip.type = 'button';
-      chip.textContent = '+' + t;
-      chip.onclick = function () {
-        if (editing.tags.indexOf(t) < 0) { editing.tags.push(t); renderTagChips(); saveDraftAuto(); }
-      };
+      var chip = el('button', 'insp-tag insp-tag-preset'); chip.type = 'button'; chip.textContent = '+' + t;
+      chip.onclick = function () { if (editing.tags.indexOf(t) < 0) { editing.tags.push(t); renderTagChips(); saveDraftAuto(); } };
       box.appendChild(chip);
     });
   }
-  function renderCatOptions() {
-    var box = $('noteCatOptions'); if (!box) return; box.innerHTML = '';
-    getCats().forEach(function (c) {
+  function renderColOptions() {
+    var box = $('noteColOptions'); if (!box) return; box.innerHTML = '';
+    collections.forEach(function (c) {
       var lab = el('label', 'insp-cat-opt');
-      var rb = el('input'); rb.type = 'radio'; rb.name = 'noteCat'; rb.value = c.id;
+      var rb = el('input'); rb.type = 'radio'; rb.name = 'noteCol'; rb.value = c.id;
       if (editing.category === c.id) rb.checked = true;
       rb.addEventListener('change', function () { if (this.checked) { editing.category = c.id; saveDraftAuto(); } });
       lab.appendChild(rb);
       var span = el('span'); span.textContent = ' ' + c.emoji + ' ' + c.name; lab.appendChild(span);
       box.appendChild(lab);
     });
-    var mgmt = el('button', 'insp-cat-manage'); mgmt.type = 'button';
-    mgmt.textContent = '⚙️ 管理分类';
-    mgmt.onclick = openCatManage;
-    box.appendChild(mgmt);
   }
 
   function openNoteModal(note) {
-    editing = { id: null, title: '', body: '', category: '', tags: [], images: [], isEdit: false, _originalRefs: [] };
-    $('noteModalTitle').textContent = '新建灵感笔记';
+    editing = { id: null, title: '', body: '', category: collections.length ? collections[0].id : 'uncategorized', tags: [], images: [], isEdit: false, _originalRefs: [], _originalThumbRefs: [] };
+    $('noteModalTitle').textContent = '新建灵感';
     $('noteTitle').value = ''; $('noteBody').value = '';
-    renderTagChips(); renderThumbs(); renderPresetTags(); renderCatOptions();
-
+    renderTagChips(); renderThumbs(); renderPresetTags(); renderColOptions();
     if (note) {
       editing.isEdit = true; editing.id = note.id;
       editing._originalRefs = (note.imageRefs || []).slice();
       editing._originalThumbRefs = (note.thumbRefs || []).slice();
-      $('noteModalTitle').textContent = '编辑灵感笔记';
+      $('noteModalTitle').textContent = '编辑灵感';
       $('noteTitle').value = note.title || '';
       $('noteBody').value = note.body || '';
-      editing.category = note.category || '';
+      editing.category = note.category || (collections.length ? collections[0].id : 'uncategorized');
       editing.tags = (note.tags || []).slice();
-      renderTagChips();
+      renderTagChips(); renderColOptions();
       Promise.all((note.imageRefs || []).map(loadEditingImage)).then(function (imgs) {
-        editing.images = imgs.filter(Boolean).map(function (im, idx) {
-          im.thumbId = (note.thumbRefs || [])[idx] || null;
-          return im;
-        });
+        editing.images = imgs.filter(Boolean).map(function (im, idx) { im.thumbId = (note.thumbRefs || [])[idx] || null; return im; });
         renderThumbs();
       });
     } else {
       DB.getDraft().then(function (d) {
         if (d && isDraftMeaningful(d)) {
           editing.title = d.title || ''; editing.body = d.body || '';
-          editing.category = d.category || ''; editing.tags = (d.tags || []).slice();
+          editing.category = d.category || (collections.length ? collections[0].id : 'uncategorized');
+          editing.tags = (d.tags || []).slice();
           $('noteTitle').value = editing.title; $('noteBody').value = editing.body;
-          renderTagChips(); renderCatOptions();
+          renderTagChips(); renderColOptions();
           Promise.all((d.imageIds || []).map(loadEditingImage)).then(function (imgs) {
             editing.images = imgs.filter(Boolean); renderThumbs();
           });
@@ -436,8 +456,8 @@
     }
     $('noteModal').hidden = false;
     document.body.classList.add('insp-noscroll');
+    setTimeout(function () { var f = $('noteImgInput'); if (f) f.focus && f.blur(); }, 50);
   }
-
   function closeNoteModal() {
     revokeAll(editing ? editing.images.map(function (i) { return i.url; }) : []);
     editing = null;
@@ -447,8 +467,7 @@
 
   function publishNote() {
     if (!editing) return;
-    if (!editing.category) { toast('请先选择分类（必选）'); return; }
-    if (!editing.images.length) { toast('请至少上传一张图片（必填）'); return; }
+    if (!editing.category) { toast('请先选择合集（必选）'); return; }
     var note = {
       id: editing.id || undefined,
       title: $('noteTitle').value.trim(),
@@ -477,10 +496,11 @@
           location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id) + '&from=list';
           gentle({ icon: '✨', title: '更新成功～', sub: '灵感又变得更完整啦 🌸' });
         } else {
-          state.cat = 'all'; renderCatBar(); renderTagBar(); window.scrollTo({ top: 0, behavior: 'smooth' });
+          state.cat = 'all'; renderCatBar(); renderTagBar();
           gentle({ icon: '✨', title: '太好啦，灵感已收藏！', sub: '今天也认真记录了呢 💕' });
         }
-      });
+      })
+      .catch(function () { toast('保存失败，请重试'); });
   }
 
   function handleFiles(fileList) {
@@ -493,260 +513,126 @@
     });
   }
 
-  /* ---------- 详情 ---------- */
-  function openDetail(id, noteOpt) {
-    var proceed = function (note) {
-      if (!note) return;
-      currentDetail = note;
-      revokeAll(detailUrls); detailUrls = []; detailDots = [];
-      var body = $('detailBody'); body.innerHTML = '';
-      var carousel = el('div', 'insp-carousel');
-      var refs = note.imageRefs || [];
-      var pageInd = null;
-      if (refs.length > 1) {
-        pageInd = el('div', 'insp-page-indicator'); pageInd.textContent = '1/' + refs.length; carousel.appendChild(pageInd);
-      }
-      var c = catInfo(note.category);
-      if (!refs.length) {
-        var ph = el('div', 'insp-detail-ph'); ph.textContent = c.emoji; carousel.appendChild(ph);
-      }
-      Promise.all(refs.map(function (iid) {
-        return DB.getImageBlob(iid).then(function (blob) {
-          if (!blob) return null;
-          var u = URL.createObjectURL(blob); detailUrls.push(u);
-          var slide = el('div', 'insp-slide');
-          var sph = el('div', 'insp-slide-ph'); sph.textContent = c.emoji; slide.appendChild(sph);
-          var img = el('img', 'insp-slide-img'); img.src = u;
-          img.onload = function () { if (sph.parentNode) sph.parentNode.removeChild(sph); };
-          img.onerror = function () { if (sph.parentNode) sph.parentNode.removeChild(sph); };
-          img.onclick = function () { openLightbox(detailUrls.indexOf(u)); };
-          slide.appendChild(img); return slide;
-        }).catch(function () { return null; });
-      })).then(function (slides) {
-        slides.filter(Boolean).forEach(function (s) { carousel.appendChild(s); });
-        body.appendChild(carousel);
-
-        // 圆点指示器
-        if (refs.length > 1) {
-          var dots = el('div', 'insp-dots');
-          refs.forEach(function (_, i) {
-            var dot = el('span', 'insp-dot' + (i === 0 ? ' active' : ''));
-            dots.appendChild(dot); detailDots.push(dot);
-          });
-          body.appendChild(dots);
-          carousel.onscroll = function () {
-            var idx = Math.round(carousel.scrollLeft / carousel.clientWidth);
-            detailDots.forEach(function (d, i) { d.classList.toggle('active', i === idx); });
-            if (pageInd) pageInd.textContent = (idx + 1) + '/' + refs.length;
-          };
-        }
-
-        var content = el('div', 'insp-detail-content');
-        if (note.title) { var t = el('h2', 'insp-detail-title'); t.textContent = note.title; content.appendChild(t); }
-        if (note.body) { var b = el('div', 'insp-detail-text'); b.textContent = note.body; content.appendChild(b); }
-        var c2 = catInfo(note.category);
-        var foot = el('div', 'insp-detail-foot');
-        var cat = el('span', 'insp-detail-cat'); cat.textContent = '📂 ' + c2.name; foot.appendChild(cat);
-        if (note.tags && note.tags.length) {
-          var tags = el('div', 'insp-detail-tags');
-          note.tags.forEach(function (tg) { var s = el('span', 'insp-tag'); s.textContent = '#' + tg; tags.appendChild(s); });
-          foot.appendChild(tags);
-        }
-        content.appendChild(foot);
-        var date = el('div', 'insp-detail-date'); date.textContent = '📅 收藏于 ' + dateZh(note.createdAt); content.appendChild(date);
-        body.appendChild(content);
-        $('detailView').hidden = false;
-        document.body.classList.add('insp-noscroll');
-      });
-    };
-    if (noteOpt) { proceed(noteOpt); }
-    else { DB.getNote(id).then(proceed); }
-  }
-  function closeDetail() {
-    revokeAll(detailUrls); detailUrls = []; detailDots = [];
-    $('detailView').hidden = true;
-    $('detailMoreMenu').hidden = true;
-    document.body.classList.remove('insp-noscroll');
-  }
-  function copyNoteText(note) {
-    var text = (note.title ? note.title + '\n' : '') + (note.body || '') + '\n标签：' + (note.tags || []).join('、');
-    function fallback(s) {
-      var ta = document.createElement('textarea'); ta.value = s; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); toast('已复制全部文字'); } catch (e) { toast('复制失败，请手动选择'); }
-      document.body.removeChild(ta);
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { toast('已复制全部文字'); }, function () { fallback(text); });
-    } else fallback(text);
-  }
-  function deleteNote(id) {
-    confirmDialog('确定要删除这条灵感吗？', '删除后无法恢复哦 💔').then(function (ok) {
-      if (!ok) return;
-      DB.deleteNotePermanent(id).then(function () { closeDetail(); render(); gentle({ icon: '🍃', title: '已删除', sub: '没关系，美好还在心里 💭' }); });
-    });
-  }
-
-  /* ---------- 灯箱 ---------- */
-  function openLightbox(i) {
-    if (!detailUrls.length) return;
-    lightboxIndex = (i + detailUrls.length) % detailUrls.length;
-    var img = $('lightboxImg'); img.src = detailUrls[lightboxIndex];
-    img.style.transform = ''; if (img.classList) img.classList.remove('zoomed');
-    $('lightbox').hidden = false;
-  }
-  function closeLightbox() { $('lightbox').hidden = true; }
-  function lightboxStep(d) { openLightbox(lightboxIndex + d); }
-
-  // 灯箱双指缩放 / 双击放大（轻量实现，不依赖第三方库）
-  function bindLightboxZoom() {
-    var img = $('lightboxImg'); if (!img) return;
-    var pointers = {};
-    var startDist = 0, startScale = 1, scale = 1, lastX = 0, lastY = 0, tx = 0, ty = 0, startTx = 0, startTy = 0;
-    function apply() { img.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')'; img.classList.toggle('zoomed', scale > 1.05); }
-    img.addEventListener('pointerdown', function (e) {
-      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
-      try { img.setPointerCapture(e.pointerId); } catch (err) {}
-      var ks = Object.keys(pointers);
-      if (ks.length === 1) { lastX = e.clientX; lastY = e.clientY; startTx = tx; startTy = ty; }
-      else if (ks.length === 2) { var p1 = pointers[ks[0]], p2 = pointers[ks[1]]; startDist = Math.hypot(p1.x - p2.x, p1.y - p2.y); startScale = scale; }
-    });
-    img.addEventListener('pointermove', function (e) {
-      if (!pointers[e.pointerId]) return;
-      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
-      var ks = Object.keys(pointers);
-      if (ks.length >= 2) {
-        var p1 = pointers[ks[0]], p2 = pointers[ks[1]];
-        var d = Math.hypot(p1.x - p2.x, p1.y - p2.y);
-        scale = Math.min(4, Math.max(1, startScale * (startDist ? d / startDist : 1)));
-      } else if (scale > 1.02) {
-        tx = startTx + (e.clientX - lastX); ty = startTy + (e.clientY - lastY);
-      }
-      apply();
-    });
-    function up(e) {
-      delete pointers[e.pointerId];
-      if (Object.keys(pointers).length === 0 && scale <= 1.02) { tx = 0; ty = 0; apply(); }
-    }
-    img.addEventListener('pointerup', up);
-    img.addEventListener('pointercancel', up);
-    img.addEventListener('dblclick', function () { scale = scale > 1.02 ? 1 : 2.5; tx = 0; ty = 0; apply(); });
-  }
-
-  /* ---------- 分类管理 ---------- */
-  function openCatManage() {
-    renderCatManage();
-    $('catManageModal').hidden = false;
-  }
-  function closeCatManage() { $('catManageModal').hidden = true; }
-
-  function renderCatManage() {
-    var list = $('catManageList'); list.innerHTML = '';
-    getCats().forEach(function (c, idx) {
-      var row = el('div', 'insp-cat-row');
-      row.draggable = !c.fixed;
-      row.dataset.idx = idx;
-      var handle = el('span', 'insp-cat-handle'); handle.textContent = '⠿'; if (c.fixed) handle.style.visibility = 'hidden';
+  /* ---------- 合集管理 ---------- */
+  function openColModal() { renderColList(); $('colModal').hidden = false; }
+  function closeColModal() { $('colModal').hidden = true; }
+  function renderColList() {
+    var list = $('colList'); list.innerHTML = '';
+    collections.forEach(function (c, idx) {
+      var row = el('div', 'insp-col-row'); row.draggable = !c.fixed; row.dataset.idx = idx;
+      var handle = el('span', 'insp-col-handle'); handle.textContent = '⠿'; if (c.fixed) handle.style.visibility = 'hidden';
       row.appendChild(handle);
-      var emoji = el('button', 'insp-cat-emoji'); emoji.type = 'button'; emoji.textContent = c.emoji;
-      emoji.onclick = function () { openCatEdit(c); };
-      row.appendChild(emoji);
-      var name = el('button', 'insp-cat-name'); name.type = 'button'; name.textContent = c.name + (c.fixed ? '（预设）' : '');
-      name.onclick = function () { openCatEdit(c); };
-      row.appendChild(name);
+      var emoji = el('button', 'insp-col-emoji'); emoji.type = 'button'; emoji.textContent = c.emoji;
+      emoji.onclick = function () { openColEdit(c); }; row.appendChild(emoji);
+      var name = el('button', 'insp-col-name'); name.type = 'button'; name.textContent = c.name + (c.fixed ? '（预设）' : '');
+      name.onclick = function () { openColEdit(c); }; row.appendChild(name);
       if (!c.fixed) {
-        var del = el('button', 'insp-cat-del'); del.type = 'button'; del.textContent = '🗑';
-        del.onclick = function () { deleteCat(c); };
-        row.appendChild(del);
-        row.addEventListener('dragstart', function () { catDragFrom = idx; row.classList.add('dragging'); });
-        row.addEventListener('dragend', function () { row.classList.remove('dragging'); catDragFrom = null; });
+        var del = el('button', 'insp-col-del'); del.type = 'button'; del.textContent = '🗑';
+        del.onclick = function () { deleteCol(c); }; row.appendChild(del);
+        row.addEventListener('dragstart', function () { colDragFrom = idx; row.classList.add('dragging'); });
+        row.addEventListener('dragend', function () { row.classList.remove('dragging'); colDragFrom = null; });
         row.addEventListener('dragover', function (e) { e.preventDefault(); });
         row.addEventListener('drop', function (e) {
           e.preventDefault();
-          if (catDragFrom === null || catDragFrom === idx) return;
-          var moved = cats.splice(catDragFrom, 1)[0];
-          cats.splice(idx, 0, moved); persistCats(); renderCatManage(); renderCatBar(); renderTagBar();
+          if (colDragFrom === null || colDragFrom === idx) return;
+          var moved = collections.splice(colDragFrom, 1)[0];
+          collections.splice(idx, 0, moved);
+          collections.forEach(function (cc, i) { cc.order = i + 1; DB.saveCollection(cc).catch(function () {}); });
+          renderColList(); renderCatBar();
         });
       }
       list.appendChild(row);
     });
   }
-
-  function deleteCat(cat) {
-    if (cat.fixed) { toast('预设分类不可删除'); return; }
-    confirmDialog('删除后该分类下的所有灵感将移至「未分类」，确认删除？').then(function (ok) {
+  function deleteCol(c) {
+    if (c.fixed) { toast('预设合集不可删除'); return; }
+    confirmDialog('删除后「' + c.name + '」下的灵感将移至「未分类」，确认删除？').then(function (ok) {
       if (!ok) return;
-      DB.getAllNotes().then(function (notes) {
-        return Promise.all(notes.map(function (n) {
-          if (n.category === cat.id) { n.category = 'uncategorized'; return DB.saveNote(n); }
-          return null;
-        }));
-      }).then(function () {
-        removeCategory(cat.id);
-        renderCatManage(); renderCatBar(); renderTagBar(); renderCatOptions(); render();
-        toast('已删除分类，相关灵感移至「未分类」');
-      });
+      DB.deleteCollection(c.id).then(function () {
+        return DB.getCollections();
+      }).then(function (cols) {
+        collections = cols; renderColList(); renderCatBar(); renderTagBar(); renderColOptions(); render();
+        toast('已删除合集，相关灵感移至「未分类」');
+      }).catch(function () { toast('删除失败'); });
     });
   }
-
-  function openCatEdit(cat) {
-    editingCat = cat ? Object.assign({}, cat) : { id: null, name: '', emoji: '👗', fixed: false };
-    $('catEditTitle').textContent = cat ? '编辑分类' : '新建分类';
-    $('catEditSave').textContent = cat ? '保存' : '创建';
-    $('catEditName').value = cat ? cat.name : '';
-    renderEmojiPicker($('catEditEmojiGrid'), editingCat.emoji);
-    $('catEditModal').hidden = false;
+  function openColEdit(cat) {
+    editingCol = cat ? Object.assign({}, cat) : { id: null, name: '', emoji: '✨', fixed: false };
+    $('colEditTitle').textContent = cat ? '编辑合集' : '新建合集';
+    $('colEditSave').textContent = cat ? '保存' : '创建';
+    $('colEditName').value = cat ? cat.name : '';
+    $('colEditDelete').hidden = !cat || !!cat.fixed;
+    renderEmojiPicker($('colEditEmojiGrid'), editingCol.emoji);
+    $('colEditModal').hidden = false;
   }
-  function closeCatEdit() { $('catEditModal').hidden = true; editingCat = null; }
-
+  function closeColEdit() { $('colEditModal').hidden = true; editingCol = null; }
   function renderEmojiPicker(container, selected) {
     container.innerHTML = '';
     EMOJI_CHOICES.forEach(function (em) {
       var b = el('button', 'insp-emoji-cell' + (em === selected ? ' active' : ''));
       b.type = 'button'; b.textContent = em;
       b.onclick = function () {
-        if (editingCat) editingCat.emoji = em;
+        if (editingCol) editingCol.emoji = em;
         Array.prototype.forEach.call(container.children, function (c) { c.classList.remove('active'); });
         b.classList.add('active');
       };
       container.appendChild(b);
     });
   }
+  function saveColEdit() {
+    if (!editingCol) return;
+    var name = $('colEditName').value.trim();
+    if (!name) { toast('请输入合集名称'); return; }
+    var maxOrder = 0; collections.forEach(function (c) { if (c.order > maxOrder) maxOrder = c.order; });
+    var rec = {
+      id: editingCol.id || genId('cat'),
+      name: name,
+      emoji: editingCol.emoji || '✨',
+      fixed: !!editingCol.fixed,
+      order: editingCol.id ? (editingCol.order || maxOrder + 1) : (maxOrder + 1),
+      createdAt: editingCol.createdAt || new Date().toISOString()
+    };
+    DB.saveCollection(rec).then(function () {
+      return DB.getCollections();
+    }).then(function (cols) {
+      collections = cols; closeColEdit(); renderColList(); renderCatBar(); renderTagBar(); renderColOptions();
+      toast(editingCol.id ? '已保存' : '已新建合集 ✨');
+    }).catch(function () { toast('保存失败'); });
+  }
 
-  function saveCatEdit() {
-    if (!editingCat) return;
-    var name = $('catEditName').value.trim();
-    if (!name) { toast('请输入分类名称'); return; }
-    if (editingCat.id) {
-      updateCategory(editingCat.id, name, editingCat.emoji);
-    } else {
-      addCategory(name, editingCat.emoji);
-    }
-    closeCatEdit();
-    renderCatManage(); renderCatBar(); renderTagBar(); renderCatOptions();
-    toast(editingCat.id ? '已保存' : '已新建分类 ✨');
+  /* ---------- 标签筛选 ---------- */
+  function openTagModal() {
+    var list = $('tagModalList'); list.innerHTML = '';
+    var tags = tagsForCurrentCat();
+    if (!tags.length) { var e = el('div', 'insp-tag-empty'); e.textContent = '暂无标签'; list.appendChild(e); }
+    tags.forEach(function (t) {
+      var chip = el('button', 'insp-tag' + (state.tag === t ? ' insp-tag-active' : ''));
+      chip.type = 'button'; chip.textContent = '#' + t;
+      chip.onclick = function () { state.tag = (state.tag === t) ? '' : t; Array.prototype.forEach.call(list.children, function (c) { c.classList.remove('insp-tag-active'); }); if (state.tag) chip.classList.add('insp-tag-active'); };
+      list.appendChild(chip);
+    });
+    $('tagModal').hidden = false;
   }
 
   /* ---------- 回收站 ---------- */
   function openTrash() {
-    DB.purgeExpiredTrash().then(function () {
-      return DB.getTrashedNotes();
-    }).then(function (list) {
+    DB.purgeExpiredTrash().then(function () { return DB.getTrashedNotes(); }).then(function (list) {
       var box = $('trashList'); box.innerHTML = '';
       if (!list.length) { var e = el('div', 'insp-trash-empty'); e.textContent = '回收站是空的 🌿'; box.appendChild(e); }
       list.forEach(function (n) {
         var row = el('div', 'insp-trash-row');
         var info = el('div', 'insp-trash-info');
-        var c = catInfo(n.category);
+        var c = colInfo(n.category);
         var tt = el('div', 'insp-trash-title'); tt.textContent = (n.title || (c.emoji + ' ' + c.name));
         var sub = el('div', 'insp-trash-sub');
         var days = n.trashedAt ? Math.ceil((Date.now() - new Date(n.trashedAt).getTime()) / 86400000) : 0;
-        sub.textContent = '删除于 ' + formatTime(n.trashedAt) + ' · 还剩约 ' + Math.max(0, DB.TRASH_DAYS - days) + ' 天可恢复';
+        sub.textContent = '还剩约 ' + Math.max(0, DB.TRASH_DAYS - days) + ' 天可恢复';
         info.appendChild(tt); info.appendChild(sub);
         var acts = el('div', 'insp-trash-acts');
-        var rb = el('button', 'insp-btn-mini'); rb.textContent = '恢复'; rb.onclick = function () {
-          DB.restoreNote(n.id).then(function () { openTrash(); render(); toast('已恢复'); });
-        };
-        var db2 = el('button', 'insp-btn-mini insp-btn-danger'); db2.textContent = '彻底删除'; db2.onclick = function () {
+        var rb = el('button', 'insp-btn-mini'); rb.textContent = '恢复';
+        rb.onclick = function () { DB.restoreNote(n.id).then(function () { openTrash(); render(); toast('已恢复'); }); };
+        var db2 = el('button', 'insp-btn-mini insp-btn-danger'); db2.textContent = '彻底删除';
+        db2.onclick = function () {
           confirmDialog('彻底删除后无法恢复，确定吗？').then(function (ok) {
             if (!ok) return;
             DB.deleteNotePermanent(n.id).then(function () { openTrash(); render(); toast('已彻底删除'); });
@@ -755,38 +641,33 @@
         acts.appendChild(rb); acts.appendChild(db2);
         row.appendChild(info); row.appendChild(acts); box.appendChild(row);
       });
-      $('trashView').hidden = false;
+      $('trashModal').hidden = false;
     });
   }
 
   /* ---------- 备份 ---------- */
   function exportBackup() {
     DB.exportAll().then(function (data) {
-      data.categories = getCats();
       var blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       var url = URL.createObjectURL(blob);
-      var a = document.createElement('a'); a.href = url; a.download = '灵感专区备份-' + dateStr() + '.json';
+      var a = document.createElement('a'); a.href = url; a.download = '灵感备份-' + (new Date().getFullYear()) + ('0'+(new Date().getMonth()+1)).slice(-2) + ('0'+new Date().getDate()).slice(-2) + '.json';
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-      toast('备份已导出（含图片）');
-    });
+      toast('备份已导出（含图片与合集）');
+    }).catch(function () { toast('导出失败'); });
   }
   function importBackup(file) {
     var reader = new FileReader();
     reader.onload = function () {
       try {
         var data = JSON.parse(reader.result);
-        confirmDialog('导入将合并到现有灵感笔记，确定继续？').then(function (ok) {
+        confirmDialog('导入将「合并」到现有灵感（不覆盖、不删除已有内容），确定继续？', '合集与笔记都会追加进来').then(function (ok) {
           if (!ok) return;
-          DB.importAll(data, 'merge').then(function () {
-            if (data.categories && Array.isArray(data.categories)) {
-              // 仅合并用户自定义分类（不动预设）
-              data.categories.forEach(function (c) {
-                if (!c.fixed && !cats.some(function (x) { return x.id === c.id; })) cats.push(Object.assign({}, c));
-              });
-              persistCats();
-            }
-            renderCatBar(); renderTagBar(); renderCatOptions(); render(); toast('导入完成 ✨');
+          DB.importAll(data).then(function () {
+            return DB.getCollections();
+          }).then(function (cols) {
+            collections = cols; renderCatBar(); renderTagBar(); renderColOptions(); render();
+            toast('导入完成 ✨（已合并）');
           }).catch(function () { toast('导入失败：文件损坏'); });
         });
       } catch (e) { toast('导入失败：不是有效的备份文件'); }
@@ -794,7 +675,7 @@
     reader.readAsText(file);
   }
 
-  /* ---------- 通用确认框 ---------- */
+  /* ---------- 确认框 ---------- */
   function confirmDialog(msg, sub) {
     return new Promise(function (res) {
       var m = $('confirmModal'); $('confirmMsg').textContent = msg;
@@ -808,28 +689,46 @@
     });
   }
 
-  /* ---------- 事件绑定 ---------- */
+  /* ---------- 滚动恢复（内嵌返回详情时） ---------- */
+  function saveInspScroll() {
+    try { var m = $('inspMain'); if (m) sessionStorage.setItem(SCROLL_KEY, String(m.scrollTop)); } catch (e) {}
+  }
+  function restoreInspScroll() {
+    var saved = 0;
+    try { saved = parseInt(sessionStorage.getItem(SCROLL_KEY), 10); } catch (e) {}
+    if (!saved || saved <= 0) return;
+    var m = $('inspMain'); if (!m) return;
+    var tries = 0;
+    (function poll() {
+      if (m.scrollHeight >= saved + m.clientHeight || tries > 90) {
+        try { m.scrollTop = Math.min(saved, Math.max(0, m.scrollHeight - m.clientHeight)); sessionStorage.removeItem(SCROLL_KEY); } catch (e) {}
+        return;
+      }
+      tries++; requestAnimationFrame(poll);
+    })();
+  }
+  window.InspirationScroll = { save: saveInspScroll, restore: restoreInspScroll };
+
+  /* ---------- 绑定 ---------- */
   function bind() {
-    $('inspHome').onclick = function () { location.href = 'index.html'; };
-    $('inspSearchCurrent').onclick = function () { var s = $('inspSearchbar'); s.hidden = !s.hidden; if (!s.hidden) $('inspSearchInput').focus(); };
+    $('inspHome').onclick = function () {
+      if (EMBEDDED && window.App && typeof window.App.switchModule === 'function') window.App.switchModule('home');
+      else location.href = 'index.html';
+    };
+    $('inspSearchBtn').onclick = function () { var s = $('inspSearchbar'); s.hidden = !s.hidden; if (!s.hidden) $('inspSearchInput').focus(); };
     $('inspSearchClose').onclick = function () { $('inspSearchbar').hidden = true; };
-    $('inspSearchInput').addEventListener('input', function () {
-      state.q = this.value.trim(); renderTagBar(); render();
-    });
+    $('inspSearchInput').addEventListener('input', function () { state.q = this.value.trim(); renderTagBar(); render(); });
     $('inspMore').onclick = function () { $('inspMoreMenu').hidden = !$('inspMoreMenu').hidden; };
     $('inspMoreMenu').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
     $('exportMenuItem').onclick = function () { $('inspMoreMenu').hidden = true; exportBackup(); };
     $('importMenuItem').onclick = function () { $('inspMoreMenu').hidden = true; $('importFile').click(); };
     $('trashMenuItem').onclick = function () { $('inspMoreMenu').hidden = true; openTrash(); };
-    $('importFile').addEventListener('change', function () {
-      if (this.files && this.files[0]) importBackup(this.files[0]); this.value = '';
-    });
-    $('trashClose').onclick = function () { $('trashView').hidden = true; };
+    $('manageColMenuItem').onclick = function () { $('inspMoreMenu').hidden = true; openColModal(); };
 
     $('inspCatBar').addEventListener('click', function (e) {
       var btn = e.target.closest('.insp-cat-tab'); if (!btn) return;
       var cat = btn.dataset.cat;
-      if (cat === '__new') { openCatEdit(null); return; }
+      if (cat === '__new') { openColEdit(null); return; }
       state.cat = cat;
       var tags = tagsForCurrentCat();
       if (state.tag && tags.indexOf(state.tag) < 0) state.tag = '';
@@ -849,14 +748,12 @@
 
     $('inspFab').onclick = function () { openNoteModal(null); };
     $('noteModalClose').onclick = closeNoteModal;
-    $('notePublish').textContent = '添加';
     $('notePublish').onclick = publishNote;
     $('noteSaveDraft').onclick = saveDraftNow;
     $('noteImgInput').addEventListener('change', function () { if (this.files) handleFiles(this.files); this.value = ''; });
     $('noteTitle').addEventListener('input', saveDraftAuto);
-    $('noteTitle').addEventListener('input', function () { var m = $('noteTitleCount'); if (m) m.textContent = this.value.length + '/30'; });
     $('noteBody').addEventListener('input', saveDraftAuto);
-    $('noteBody').addEventListener('input', function () { var m = $('noteBodyCount'); if (m) m.textContent = this.value.length + '/500'; });
+    $('noteColManage').onclick = openColModal;
     $('noteTagAdd').onclick = function () {
       var v = $('noteTagInput').value.trim();
       if (!v) return;
@@ -870,8 +767,7 @@
       var id = card.dataset.id;
       card.classList.add('pressing');
       setTimeout(function () { card.classList.remove('pressing'); }, 180);
-      saveInspScroll(); // 跳转详情前记录瀑布流滚动位置，返回时恢复（参考小红书）
-      // 跳转独立详情页（全新页面，非本页弹层展开，整卡可点必跳）；from=list 用于返回时回到灵感列表
+      saveInspScroll();
       location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id) + '&from=list';
     });
     var mainEl = $('inspMain');
@@ -879,47 +775,56 @@
       if (mainEl.scrollTop + mainEl.clientHeight >= mainEl.scrollHeight - 600) appendNextPage();
     });
 
-    $('detailClose').onclick = closeDetail;
-    $('detailMore').onclick = function () { $('detailMoreMenu').hidden = !$('detailMoreMenu').hidden; };
-    $('detailMoreMenu').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
-    $('detailEdit').onclick = function () { $('detailMoreMenu').hidden = true; if (currentDetail) openNoteModal(currentDetail); };
-    $('detailDelete').onclick = function () { $('detailMoreMenu').hidden = true; if (currentDetail) deleteNote(currentDetail.id); };
-    $('detailCancel').onclick = function () { $('detailMoreMenu').hidden = true; };
+    $('colModalClose').onclick = closeColModal;
+    $('colModalAdd').onclick = function () { openColEdit(null); };
+    $('colEditClose').onclick = closeColEdit;
+    $('colEditSave').onclick = saveColEdit;
+    $('colEditDelete').onclick = function () { if (editingCol) deleteCol(editingCol); };
 
-    $('lightboxClose').onclick = closeLightbox;
-    $('lightboxPrev').onclick = function () { lightboxStep(-1); };
-    $('lightboxNext').onclick = function () { lightboxStep(1); };
-    bindLightboxZoom();
+    $('tagModalClose').onclick = function () { $('tagModal').hidden = true; };
+    $('tagModalDone').onclick = function () { $('tagModal').hidden = true; render(); };
+    $('tagModalList').addEventListener('click', function () { /* 选择即时生效，done 关闭 */ });
 
-    // 分类管理
-    $('catManageClose').onclick = closeCatManage;
-    $('catManageAdd').onclick = function () { openCatEdit(null); };
-    $('catEditClose').onclick = closeCatEdit;
-    $('catEditSave').onclick = saveCatEdit;
+    $('trashModalClose').onclick = function () { $('trashModal').hidden = true; };
+
+    $('importFile').addEventListener('change', function () { if (this.files && this.files[0]) importBackup(this.files[0]); this.value = ''; });
 
     $('confirmCancel').onclick = function () { $('confirmModal').hidden = true; };
     $('confirmOk').onclick = function () { /* 由 confirmDialog 内部处理 */ };
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') {
-        if (!$('lightbox').hidden) closeLightbox();
-        else if (!$('catEditModal').hidden) closeCatEdit();
-        else if (!$('catManageModal').hidden) closeCatManage();
-        else if (!$('detailView').hidden) closeDetail();
-        else if (!$('noteModal').hidden) closeNoteModal();
+        if (!$('confirmModal').hidden) $('confirmModal').hidden = true;
+        else if (!$('colEditModal').hidden) closeColEdit();
+        else if (!$('colModal').hidden) closeColModal();
         else if (!$('tagModal').hidden) $('tagModal').hidden = true;
-        else if (!$('trashView').hidden) $('trashView').hidden = true;
+        else if (!$('trashModal').hidden) $('trashModal').hidden = true;
+        else if (!$('noteModal').hidden) closeNoteModal();
         else if (!$('inspMoreMenu').hidden) $('inspMoreMenu').hidden = true;
-        else if (!$('detailMoreMenu').hidden) $('detailMoreMenu').hidden = true;
       }
     });
   }
 
   /* ---------- 启动 ---------- */
+  function mount() {
+    var host = document.getElementById('inspRoot');
+    if (!host) {
+      // 兜底：直接挂到 body
+      host = document.createElement('div'); host.id = 'inspRoot'; document.body.appendChild(host);
+    }
+    host.innerHTML = TEMPLATE;
+    EMBEDDED = !!document.getElementById('inspirationModule');
+    var app = $('inspApp');
+    if (app && EMBEDDED) app.classList.add('insp-embedded');
+  }
+
   function init() {
     if (!DB) { toast('数据层加载失败'); return; }
-    loadCats();
+    mount();
     DB.openDB().then(function () {
+      return DB.getCollections();
+    }).then(function (cols) {
+      collections = cols || [];
       bind();
       renderCatBar(); renderTagBar();
       DB.purgeExpiredTrash().then(render);
@@ -928,27 +833,6 @@
       toast('灵感专区无法启动：' + (e && e.message ? e.message : '未知错误'));
     });
   }
-
-  /* ---------- 瀑布流滚动位置记忆（详情返回时恢复，参考小红书） ---------- */
-  var SCROLL_KEY = 'wb_insp_scroll';
-  function saveInspScroll() {
-    try { var m = $('inspMain'); if (m) sessionStorage.setItem(SCROLL_KEY, String(m.scrollTop)); } catch (e) {}
-  }
-  function restoreInspScroll() {
-    var saved = 0;
-    try { saved = parseInt(sessionStorage.getItem(SCROLL_KEY), 10); } catch (e) {}
-    if (!saved || saved <= 0) return;
-    var m = $('inspMain'); if (!m) return;
-    var tries = 0;
-    (function poll() {
-      if (m.scrollHeight >= saved + m.clientHeight || tries > 90) {
-        try { m.scrollTop = Math.min(saved, Math.max(0, m.scrollHeight - m.clientHeight)); sessionStorage.removeItem(SCROLL_KEY); } catch (e) {}
-        return;
-      }
-      tries++; requestAnimationFrame(poll);
-    })();
-  }
-  window.InspirationScroll = { save: saveInspScroll, restore: restoreInspScroll };
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();

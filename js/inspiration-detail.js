@@ -31,8 +31,9 @@
     return d.getFullYear() + '年' + (d.getMonth() + 1) + '月' + d.getDate() + '日';
   }
 
-  var CAT = { outfit: { emoji: '👗', name: '穿搭灵感' }, makeup: { emoji: '💄', name: '妆容灵感' } };
-  function catInfo(c) { return CAT[c] || { emoji: '✨', name: '灵感' }; }
+  var collections = [];
+  // 合集信息全部来自数据层（支持用户自定义合集），不再硬编码穿搭/妆容
+  function catInfo(c) { return DB.collectionInfo(c || 'uncategorized', collections); }
 
   /* ---------- 渲染 ---------- */
   function render(n) {
@@ -105,7 +106,7 @@
     tagsBox.style.display = (n.tags && n.tags.length) ? '' : 'none';
 
     var c = catInfo(n.category);
-    $('insdTime').textContent = c.emoji + ' ' + c.name + ' · 收藏于 ' + fmtDate(n.createdAt);
+    $('insdTime').textContent = c.emoji + ' ' + c.name + ' · ' + fmtDate(n.createdAt);
 
     // 互动数据
     $('insdLikeCount').textContent = n.likes || 0;
@@ -285,8 +286,11 @@
     bind();
     var id = getParam('id');
     if (!id) { toast('缺少灵感 id'); return; }
-    DB.getNote(id).then(function (n) {
+    // 同时加载笔记与合集，使合集名称/图标始终与数据层一致（自定义合集也可用）
+    Promise.all([DB.getNote(id), DB.getCollections()]).then(function (res) {
+      var n = res[0], cols = res[1];
       if (!n) { toast('未找到该灵感'); return; }
+      collections = cols || [];
       note = n;
       render(n);
     }).catch(function () { toast('读取灵感失败'); });

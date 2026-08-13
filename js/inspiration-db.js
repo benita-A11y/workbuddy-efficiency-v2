@@ -1,17 +1,25 @@
 /* =========================================================================
- * 灵感专区 — 数据层 (Inspiration Zone Data Layer)
+ * 灵感专区 — 数据层 (Inspiration Zone Data Layer)  v3
  * 完全独立：使用独立 IndexedDB 数据库，不触碰平台原有 Store / storage.js。
  * 图片以 Blob 形式存入本地，不依赖系统相册，删除相册原图不影响本专区。
+ *
+ * v3 变化：
+ *  - 新增「合集(collections)」store —— 用户可自定义分类（emoji/名称/排序），
+ *    与笔记同库存储，导出/导入一并带走，绝不丢失。
+ *  - 升级策略：onupgradeneeded 只会「新增」store/index，绝不删除笔记或图片。
+ *  - 旧版 localStorage 分类（wb_insp_categories_v1）首次打开自动迁移进 IndexedDB。
+ *  - 导入(importAll) 仅「合并」，绝不覆盖/删除已有笔记。
  * ========================================================================= */
 (function (global) {
   'use strict';
 
   var DB_NAME = 'workbuddy_inspiration';
-  var DB_VERSION = 2;
+  var DB_VERSION = 3;
   var STORE_NOTES = 'notes';
   var STORE_IMAGES = 'images';
   var STORE_THUMBS = 'thumbs';
   var STORE_DRAFTS = 'drafts';
+  var STORE_COLLECTIONS = 'collections';
   var DRAFT_KEY = 'current';
   var TRASH_DAYS = 30;
 
@@ -24,6 +32,7 @@
       var req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = function (e) {
         var db = e.target.result;
+        // 仅新增，绝不删除已有 store（数据安全第一原则）
         if (!db.objectStoreNames.contains(STORE_NOTES)) {
           var s = db.createObjectStore(STORE_NOTES, { keyPath: 'id' });
           s.createIndex('createdAt', 'createdAt', { unique: false });
@@ -38,8 +47,15 @@
         if (!db.objectStoreNames.contains(STORE_DRAFTS)) {
           db.createObjectStore(STORE_DRAFTS, { keyPath: 'id' });
         }
+        if (!db.objectStoreNames.contains(STORE_COLLECTIONS)) {
+          db.createObjectStore(STORE_COLLECTIONS, { keyPath: 'id' });
+        }
       };
-      req.onsuccess = function () { _db = req.result; resolve(_db); };
+      req.onsuccess = function () {
+        _db = req.result;
+        // 打开后做一次合集播种/迁移（不影响笔记与图片）
+        seedCollections().then(function () { resolve(_db); }, function () { resolve(_db); });
+      };
       req.onerror = function () { reject(req.error); };
     });
   }
@@ -182,6 +198,110 @@
     });
   }
 
+  /* ---------- 合集（collections）---------- */
+  var DEFAULT_COLLECTIONS = [
+    { id: 'outfit', name: '穿搭灵感', emoji: '👗', fixed: true, order: 1 },
+    { id: 'makeup', name: '妆容灵感', emoji: '💄', fixed: true, order: 2 },
+    { id: 'uncategorized', name: '未分类', emoji: '📁', fixed: true, order: 999 }
+  ];
+
+  function getCollectionsStore() { return store(STORE_COLLECTIONS, 'readwrite'); }
+
+  function getCollections() {
+    return store(STORE_COLLECTIONS, 'readonly').then(function (st) {
+      return reqP(st.getAll());
+    }).then(function (list) {
+      if (!list || !list.length) return DEFAULT_COLLECTIONS.slice();
+      list.sort(function (a, b) { return (a.order || 0) - (b.order || 0); });
+      return list;
+    });
+  }
+
+  // 首次打开：若合集为空，播种默认合集；并把旧 localStorage 分类迁移进来
+  function seedCollections() {
+    return store(STORE_COLLECTIONS, 'readonly').then(function (st) {
+      return reqP(st.getAll());
+    }).then(function (existing) {
+      var tasks = [];
+      if (!existing || !existing.length) {
+        DEFAULT_COLLECTIONS.forEach(function (c, i) {
+          tasks.push(store(STORE_COLLECTIONS, 'readwrite').then(function (s) {
+            return reqP(s.put(Object.assign({}, c, { createdAt: new Date().toISOString() })));
+          }));
+        });
+      }
+      // 迁移旧 localStorage 分类（wb_insp_categories_v1）
+      try {
+        var raw = global.localStorage && global.localStorage.getItem('wb_insp_categories_v1');
+        if (raw) {
+          var old = JSON.parse(raw);
+          if (Array.isArray(old)) {
+            var existIds = {};
+            (existing || []).forEach(function (c) { existIds[c.id] = 1; });
+            // 默认合集可能被上方刚写；补一个最新 order
+            var maxOrder = 10;
+            (existing || []).forEach(function (c) { if (c.order > maxOrder) maxOrder = c.order; });
+            old.forEach(function (c) {
+              if (c.fixed) return;                       // 预设已覆盖
+              if (existIds[c.id]) return;               // 已存在
+              maxOrder += 1;
+              tasks.push(store(STORE_COLLECTIONS, 'readwrite').then(function (s) {
+                return reqP(s.put({
+                  id: c.id || genId('cat'),
+                  name: c.name || '合集',
+                  emoji: c.emoji || '📁',
+                  fixed: false,
+                  order: maxOrder,
+                  createdAt: new Date().toISOString(),
+                  migrated: true
+                }));
+              }));
+            });
+          }
+          // 迁移完成后清掉旧 key，避免重复迁移
+          if (global.localStorage) global.localStorage.removeItem('wb_insp_categories_v1');
+        }
+      } catch (e) {}
+      return Promise.all(tasks);
+    });
+  }
+
+  function saveCollection(c) {
+    if (!c.id) c.id = genId('cat');
+    if (typeof c.order !== 'number') c.order = Date.now();
+    return store(STORE_COLLECTIONS, 'readwrite').then(function (st) {
+      return reqP(st.put(c));
+    }).then(function () { return c; });
+  }
+
+  function putCollectionRaw(c) { return saveCollection(c); }
+
+  // 删除合集：其下笔记移至「未分类」，绝不删除笔记与图片
+  function deleteCollection(id) {
+    if (id === 'uncategorized' || id === 'outfit' || id === 'makeup') {
+      return Promise.reject(new Error('预设合集不可删除'));
+    }
+    return getAllNotes().then(function (notes) {
+      return Promise.all(notes.map(function (n) {
+        if (n.category === id) { n.category = 'uncategorized'; return saveNote(n); }
+        return null;
+      }));
+    }).then(function () {
+      return store(STORE_COLLECTIONS, 'readwrite').then(function (st) { return reqP(st.delete(id)); });
+    });
+  }
+
+  // 合集信息（带兜底，避免未知 id 显示空白）
+  function collectionInfo(id, all) {
+    if (all && Array.isArray(all)) {
+      for (var i = 0; i < all.length; i++) if (all[i].id === id) return all[i];
+    }
+    if (id === 'outfit') return DEFAULT_COLLECTIONS[0];
+    if (id === 'makeup') return DEFAULT_COLLECTIONS[1];
+    if (id === 'uncategorized') return DEFAULT_COLLECTIONS[2];
+    return { id: id, name: '灵感', emoji: '✨', fixed: false };
+  }
+
   /* ---------- 草稿 ---------- */
   function saveDraft(draft) {
     return store(STORE_DRAFTS, 'readwrite').then(function (st) {
@@ -215,7 +335,6 @@
     if (global.fetch) {
       return fetch(dataUrl).then(function (r) { return r.blob(); });
     }
-    // 兜底：手动解析
     return new Promise(function (res) {
       var parts = dataUrl.split(',');
       var mime = parts[0].match(/:(.*?);/)[1];
@@ -228,31 +347,34 @@
 
   function exportAll() {
     return getAllNotes().then(function (notes) {
-      var out = {
-        meta: { app: 'workbuddy-inspiration', version: 1, exportedAt: new Date().toISOString() },
-        notes: []
-      };
-      return Promise.all(notes.map(function (n) {
-        var imgs = [];
-        var refs = n.imageRefs || [];
-        return Promise.all(refs.map(function (iid) {
-          return getImageRecord(iid).then(function (rec) {
-            if (!rec) return;
-            return blobToDataURL(rec.blob).then(function (url) {
-              return getThumbnailBlob(iid).then(function (tb) {
-                return (tb ? blobToDataURL(tb) : Promise.resolve(null));
-              }).then(function (turl) {
-                imgs.push({ id: iid, dataUrl: url, thumbDataUrl: turl, type: rec.type, width: rec.width, height: rec.height });
+      return getCollections().then(function (cols) {
+        var out = {
+          meta: { app: 'workbuddy-inspiration', version: 3, exportedAt: new Date().toISOString() },
+          collections: cols,
+          notes: []
+        };
+        return Promise.all(notes.map(function (n) {
+          var imgs = [];
+          var refs = n.imageRefs || [];
+          return Promise.all(refs.map(function (iid) {
+            return getImageRecord(iid).then(function (rec) {
+              if (!rec) return;
+              return blobToDataURL(rec.blob).then(function (url) {
+                return getThumbnailBlob(iid).then(function (tb) {
+                  return (tb ? blobToDataURL(tb) : Promise.resolve(null));
+                }).then(function (turl) {
+                  imgs.push({ id: iid, dataUrl: url, thumbDataUrl: turl, type: rec.type, width: rec.width, height: rec.height });
+                });
               });
             });
+          })).then(function () {
+            var copy = {};
+            for (var k in n) if (n.hasOwnProperty(k)) copy[k] = n[k];
+            copy._images = imgs;
+            out.notes.push(copy);
           });
-        })).then(function () {
-          var copy = {};
-          for (var k in n) if (n.hasOwnProperty(k)) copy[k] = n[k];
-          copy._images = imgs;
-          out.notes.push(copy);
-        });
-      })).then(function () { return out; });
+        })).then(function () { return out; });
+      });
     });
   }
 
@@ -264,11 +386,29 @@
     ]);
   }
 
-  function importAll(data, mode) {
+  // 导入：仅合并（mode 固定为 'merge'），绝不覆盖/删除已有笔记与图片
+  function importAll(data) {
     if (!data || !Array.isArray(data.notes)) return Promise.reject(new Error('备份文件格式不正确'));
-    var tasks = [];
-    if (mode === 'replace') tasks.push(clearAll());
-    return Promise.all(tasks).then(function () {
+    // 合并合集（仅非预设、且不与现有冲突）
+    var colTask = Promise.resolve();
+    if (Array.isArray(data.collections)) {
+      colTask = getCollections().then(function (existing) {
+        var existIds = {};
+        existing.forEach(function (c) { existIds[c.id] = 1; });
+        var maxOrder = 10;
+        existing.forEach(function (c) { if (c.order > maxOrder) maxOrder = c.order; });
+        return Promise.all(data.collections.map(function (c) {
+          if (c.fixed) return null;
+          if (existIds[c.id]) return null;
+          maxOrder += 1;
+          return saveCollection({
+            id: c.id || genId('cat'), name: c.name || '合集', emoji: c.emoji || '📁',
+            fixed: false, order: maxOrder, createdAt: new Date().toISOString()
+          });
+        }));
+      });
+    }
+    return colTask.then(function () {
       return Promise.all(data.notes.map(function (n) {
         var imgs = n._images || [];
         return Promise.all(imgs.map(function (im) {
@@ -281,11 +421,13 @@
           return Promise.all([p, tp]).then(function (r) { return r[1]; });
         })).then(function (thumbIds) {
           var note = {};
-          note.imported = true; // 导入的笔记视为外部来源，详情页仅开放分享
+          note.imported = true;
           for (var k in n) if (n.hasOwnProperty(k) && k !== '_images') note[k] = n[k];
+          if (!note.id) note.id = genId('note');
           if (!note.imageRefs) note.imageRefs = imgs.map(function (i) { return i.id; });
           note.thumbRefs = thumbIds.filter(Boolean);
           if (!note.thumbRefs.length && Array.isArray(n.thumbRefs)) note.thumbRefs = n.thumbRefs;
+          if (!note.category) note.category = 'uncategorized';
           return saveNote(note);
         });
       }));
@@ -310,6 +452,11 @@
     restoreNote: restoreNote,
     deleteNotePermanent: deleteNotePermanent,
     purgeExpiredTrash: purgeExpiredTrash,
+    getCollections: getCollections,
+    saveCollection: saveCollection,
+    putCollectionRaw: putCollectionRaw,
+    deleteCollection: deleteCollection,
+    collectionInfo: collectionInfo,
     saveDraft: saveDraft,
     getDraft: getDraft,
     clearDraft: clearDraft,

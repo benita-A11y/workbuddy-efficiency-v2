@@ -1,7 +1,8 @@
-// Service Worker - 离线优先但导航走网络优先（v37：统一电脑/手机响应式适配 + 主题换肤
-// 统一消费小记/灵感专区 + 灵感详情返回导航修正(回瀑布流保滚动) + 运行时崩溃修复；
+// Service Worker - 离线优先但导航走网络优先（v38：灵感专区重构 — 自注入单一数据源UI、
+// 自定义合集(emoji/排序/拖拽)、标签筛选、内联新建合集、编辑页支持合集+标签、详情页合集名来自数据层、
+// 列表/独立页共用同一套 DOM；数据层仅增量升级、导入合并、删除合集移入未分类，用户数据永不丢失；
 // 继承 v35/v36 network-first 缓存根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v37';
+const CACHE_NAME = 'efficiency-app-v38';
 const ASSETS = [
   './',
   './index.html',

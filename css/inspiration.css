@@ -47,10 +47,9 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
   flex: 1; margin: 0; font-size: 17px; font-weight: 700; letter-spacing: .5px;
   text-align: center; color: var(--text-primary, #333);
 }
-/* 2026-08-02：按需求移除灵感专区列表页右上角图标簇，头部仅留 ←返回 + 标题（独立页风格，干净）。
-   采用 display:none 隐藏而非删 DOM，避免 JS 里对 inspMore/inspSearch 等元素的引用抛错；
-   搜索/备份/回收站对应的 JS 函数仍保留在代码中，仅隐藏头部触发按钮。 */
-.insp-header-actions { display: none; }
+/* 头部功能按钮（搜索 / 更多）：常驻显示，确保核心功能一页可达、不被遮挡。
+   独立页为 sticky 顶栏；内嵌到平台 tab 时由 .module-inspiration 规则改为随内容滚动。 */
+.insp-header-actions { display: flex; align-items: center; gap: 2px; }
 .insp-header-actions button {
   border: none; background: transparent; cursor: pointer;
   font-size: 18px; padding: 7px; border-radius: 10px; color: var(--text-secondary, #999);
@@ -181,6 +180,8 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
   .insp-modal, .insp-detail, .insp-trash { align-items: center; padding-bottom: 0; }
   .insp-modal-card { border-radius: 18px; max-height: 92vh; }
 }
+/* 小尺寸弹窗（如新建合集）居中且更窄，凸显"轻量"感 */
+.insp-modal-card--sm { max-width: 440px; }
 .insp-modal-head, .insp-detail-head {
   display: flex; align-items: center; gap: 8px;
   padding: 14px 16px; border-bottom: 1px solid var(--border-color, #eee);
@@ -289,6 +290,14 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
 .insp-btn-mini { padding: 7px 14px; font-size: 13px; background: var(--insp-accent-soft, #EFEAF7); color: var(--insp-accent-strong, #9E89C4); }
 .insp-btn-mini:active { transform: scale(0.95); }
 .insp-btn-danger { background: #fdecec; color: #d98a8a; }
+.insp-btn-sm { flex: 0 0 auto; padding: 9px 16px; font-size: 14px; }
+/* 文字型按钮（如「＋ 新建合集」「管理合集」） */
+.insp-text-btn {
+  border: none; background: transparent; cursor: pointer; font-family: inherit;
+  color: var(--insp-strong, #9E89C4); font-size: 13.5px; padding: 8px 2px;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.insp-text-btn:active { opacity: .6; }
 
 /* ---------- 详情页 ---------- */
 .insp-detail { background: #fff; flex-direction: column; align-items: stretch; }

@@ -19,7 +19,7 @@
     </header>
 
     <main class="inse-scroll">
-      <!-- 图片上传区（多图，可增删替换） -->
+      <!-- 图片上传区（多图，可增删、拖拽排序） -->
       <div class="inse-uploader">
         <div class="inse-thumbs" id="inseThumbs"></div>
         <label class="inse-add">
@@ -31,14 +31,42 @@
       <input class="inse-input" id="inseTitle" placeholder="标题（选填）" maxlength="60">
       <textarea class="inse-textarea" id="inseBody" placeholder="记录搭配思路、妆容心得、色号、场景、季节、购买链接…" maxlength="2000"></textarea>
 
-      <div class="inse-cat">
-        <span class="inse-label">分类（必选）</span>
-        <div class="inse-cat-options">
-          <label><input type="radio" name="inseCat" value="outfit"> 👗 穿搭灵感</label>
-          <label><input type="radio" name="inseCat" value="makeup"> 💄 妆容灵感</label>
+      <!-- 合集（动态渲染，可内联新建） -->
+      <div class="insp-field">
+        <span class="insp-label">合集（必选）</span>
+        <div class="insp-cat-options" id="inseColOptions"></div>
+        <button class="insp-text-btn" id="inseColAdd" type="button">＋ 新建合集</button>
+      </div>
+
+      <!-- 标签 -->
+      <div class="insp-field">
+        <span class="insp-label">标签（可多个，回车添加）</span>
+        <div class="insp-tag-chips" id="inseTagChips"></div>
+        <div class="insp-tag-add">
+          <input id="inseTagInput" placeholder="如 通勤 / 约会 / 黄皮">
+          <button class="insp-btn-primary insp-btn-sm" id="inseTagAdd" type="button">添加</button>
         </div>
+        <div class="insp-tag-presets" id="inseTagPresets"></div>
       </div>
     </main>
+
+    <!-- 新建合集弹窗 -->
+    <div class="insp-modal" id="inseColModal" hidden>
+      <div class="insp-modal-card insp-modal-card--sm">
+        <div class="insp-modal-head">
+          <button id="inseColClose" type="button" aria-label="关闭">✕</button>
+          <span>新建合集</span>
+          <span style="width:28px"></span>
+        </div>
+        <div class="insp-modal-body">
+          <div class="insp-emoji-grid" id="inseColEmoji"></div>
+          <input class="insp-input" id="inseColName" placeholder="合集名称" maxlength="12">
+        </div>
+        <div class="insp-modal-foot">
+          <button class="insp-btn-primary" id="inseColSave" type="button">创建</button>
+        </div>
+      </div>
+    </div>
 
     <div class="inse-toast" id="inseToast" hidden></div>
   </div>
