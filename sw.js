@@ -1,8 +1,6 @@
-// Service Worker - 离线优先但导航走网络优先（v38：灵感专区重构 — 自注入单一数据源UI、
-// 自定义合集(emoji/排序/拖拽)、标签筛选、内联新建合集、编辑页支持合集+标签、详情页合集名来自数据层、
-// 列表/独立页共用同一套 DOM；数据层仅增量升级、导入合并、删除合集移入未分类，用户数据永不丢失；
-// 继承 v35/v36 network-first 缓存根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v38';
+// Service Worker - 离线优先但导航走网络优先（v39：首页新增「待办」卡片入口，点击跳转待办模块；
+// 其余继承 v38 灵感专区重构与 v35/v36 network-first 缓存根治"刷新看不到"。）
+const CACHE_NAME = 'efficiency-app-v39';
 const ASSETS = [
   './',
   './index.html',
