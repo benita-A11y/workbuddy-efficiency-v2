@@ -121,6 +121,19 @@
     return store(STORE_THUMBS, 'readwrite').then(function (st) { return reqP(st.delete(id)); });
   }
 
+  // 一次性取出当前库内全部缩略图，返回 {id: blob} 映射。
+  // 用于列表渲染时把「N 张卡片 × 各自一次 IDB 事务」合并为「1 次事务」，
+  // 大幅缩短点入灵感区的等待时间（缩略图本身很小，全量读取代价极低）。
+  function getAllThumbsMap() {
+    return store(STORE_THUMBS, 'readonly').then(function (st) {
+      return reqP(st.getAll());
+    }).then(function (list) {
+      var m = {};
+      (list || []).forEach(function (r) { if (r && r.id) m[r.id] = r.blob; });
+      return m;
+    });
+  }
+
   /* ---------- 笔记 ---------- */
   function saveNote(note) {
     if (!note.id) note.id = genId('note');
@@ -442,6 +455,7 @@
     deleteImage: deleteImage,
     addThumbnail: addThumbnail,
     getThumbnailBlob: getThumbnailBlob,
+    getAllThumbsMap: getAllThumbsMap,
     deleteThumbnail: deleteThumbnail,
     saveNote: saveNote,
     getNote: getNote,

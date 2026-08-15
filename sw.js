@@ -1,6 +1,7 @@
-// Service Worker - 离线优先但导航走网络优先（v39：首页新增「待办」卡片入口，点击跳转待办模块；
-// 其余继承 v38 灵感专区重构与 v35/v36 network-first 缓存根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v39';
+// Service Worker - 离线优先但导航走网络优先（v40：灵感列表性能优化+去拥挤化 —— 批量取缩略图(1事务替代逐卡读)、
+// 缺失缩略图首次查看自动生成并持久化、活跃笔记缓存避免重复全量读取、卡片信息精简(分类+日期合一)、加大留白；
+// 数据层只增不删，用户数据永不丢失。继承 v35/v36 network-first 缓存根治"刷新看不到"。）
+const CACHE_NAME = 'efficiency-app-v40';
 const ASSETS = [
   './',
   './index.html',

@@ -164,6 +164,8 @@
   var collections = [];           // DB 合集
   var editing = null;
   var cardUrls = {};
+  var thumbMap = {};            // {thumbId: blob} 列表渲染时一次性取出，避免逐卡读 IDB
+  var activeNotesCache = null;  // 活跃笔记缓存，避免重复全量读取
   var allNotes = [];
   var currentList = [];
   var PAGE = 24;
@@ -202,9 +204,26 @@
       img.src = url;
     });
   }
+  function blobToThumb(blob, maxW) {
+    maxW = maxW || 400;
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(blob), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth || maxW, h = img.naturalHeight || maxW;
+        var tw = Math.min(maxW, w), th = Math.max(1, Math.round(h * (tw / w)));
+        var canvas = document.createElement('canvas'); canvas.width = tw; canvas.height = th;
+        try { canvas.getContext('2d').drawImage(img, 0, 0, tw, th); } catch (e) {}
+        URL.revokeObjectURL(url);
+        if (canvas.toBlob) canvas.toBlob(function (b) { if (b) res({ blob: b, w: tw, h: th }); else rej(new Error('thumb null')); }, 'image/webp', 0.82);
+        else rej(new Error('no toBlob'));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('thumb decode fail')); };
+      img.src = url;
+    });
+  }
   function addImageFromFile(file) {
     return readImageMeta(file).then(function (m) {
-      return DB.addImage(file, file.type, m.w, m.h).then(function (id) {
+    return DB.addImage(file, file.type, m.w, m.h).then(function (id) {
         var info = { id: id, thumbId: null, url: null, thumbUrl: null, type: file.type, w: m.w, h: m.h };
         return DB.getImageBlob(id).then(function (blob) {
           info.url = URL.createObjectURL(blob);
@@ -276,18 +295,63 @@
     });
   }
 
-  function loadCoverThumb(n) {
-    var hasThumb = n.thumbRefs && n.thumbRefs[0];
-    var ref = hasThumb ? n.thumbRefs[0] : (n.imageRefs && n.imageRefs[0]);
-    if (!ref) return Promise.resolve(null);
-    var getter = hasThumb ? DB.getThumbnailBlob(ref) : DB.getImageBlob(ref);
-    return getter.then(function (blob) { return blob ? URL.createObjectURL(blob) : null; }).catch(function () { return null; });
+  /* ---------- 封面加载（性能优化：批量取缩略图 + 缺失自动生成） ---------- */
+  function syncCoverUrl(n) {
+    // 同步路径：缩略图已在 thumbMap 中，直接生成 objectURL，零异步等待
+    var thumbRef = n.thumbRefs && n.thumbRefs[0];
+    if (thumbRef && thumbMap[thumbRef]) return URL.createObjectURL(thumbMap[thumbRef]);
+    return null;
+  }
+  function paintCover(n, waterfall, url) {
+    if (!url) return;
+    cardUrls[n.id] = url;
+    var card = waterfall.querySelector('.insp-card[data-id="' + n.id + '"]');
+    if (!card) return;
+    var ph = card.querySelector('.insp-card-ph');
+    if (!ph) return;
+    var img = el('img', 'insp-card-cover');
+    img.alt = ''; img.src = url; img.loading = 'lazy';
+    img.onload = function () { img.classList.add('loaded'); };
+    ph.replaceWith(img);
+    if ((n.imageRefs || []).length > 1) {
+      var cnt = el('div', 'insp-card-count'); cnt.textContent = '1/' + n.imageRefs.length;
+      card.appendChild(cnt);
+    }
+  }
+  function asyncCoverFor(n, waterfall) {
+    // 异步路径：仅对「没有缓存缩略图」的卡片（多为早期/导入笔记）补读原图，
+    // 并即时生成 webp 缩略图持久化，之后再次进入即可同步秒开（数据层只增不删，安全）。
+    var thumbRef = n.thumbRefs && n.thumbRefs[0];
+    var imgRef = n.imageRefs && n.imageRefs[0];
+    if (!imgRef) return;
+    var p = thumbRef ? DB.getThumbnailBlob(thumbRef) : Promise.resolve(null);
+    p.then(function (tb) {
+      if (tb) { thumbMap[thumbRef] = tb; paintCover(n, waterfall, URL.createObjectURL(tb)); return; }
+      DB.getImageBlob(imgRef).then(function (blob) {
+        if (!blob) return;
+        blobToThumb(blob, 400).then(function (r) {
+          DB.addThumbnail(r.blob, r.blob.type || 'image/webp', r.w, r.h).then(function (tid) {
+            thumbMap[tid] = r.blob;
+            if (!n.thumbRefs) n.thumbRefs = [];
+            n.thumbRefs[0] = tid;
+            DB.saveNote(n).catch(function () {}).then(function () { paintCover(n, waterfall, URL.createObjectURL(r.blob)); });
+          }).catch(function () { paintCover(n, waterfall, URL.createObjectURL(blob)); });
+        }).catch(function () { paintCover(n, waterfall, URL.createObjectURL(blob)); });
+      }).catch(function () {});
+    }).catch(function () {});
   }
 
+  function loadActiveNotes() {
+    if (activeNotesCache) return Promise.resolve(activeNotesCache);
+    return DB.getActiveNotes().then(function (n) { activeNotesCache = n; return n; });
+  }
+  function invalidateNotes() { activeNotesCache = null; }
+
   function render() {
-    DB.getActiveNotes().then(function (notes) {
-      allNotes = notes;
-      var filtered = filterNotes(notes);
+    Promise.all([loadActiveNotes(), DB.getAllThumbsMap()]).then(function (res) {
+      allNotes = res[0];
+      thumbMap = res[1] || {};
+      var filtered = filterNotes(allNotes);
       currentList = filtered;
       renderCatBar(); renderTagBar();
       revokeCardUrls();
@@ -303,13 +367,13 @@
     if (renderedCount >= currentList.length) return;
     var start = renderedCount, end = Math.min(start + PAGE, currentList.length);
     var page = currentList.slice(start, end);
-    Promise.all(page.map(function (n) {
-      return loadCoverThumb(n).then(function (url) { if (url) cardUrls[n.id] = url; return n; }).catch(function () { return n; });
-    })).then(function (list) {
-      var waterfall = $('inspWaterfall');
-      list.forEach(function (n) { waterfall.appendChild(cardEl(n)); });
-      renderedCount = end;
-    });
+    var waterfall = $('inspWaterfall');
+    // 先同步把有缩略图的卡片画出来（零等待）
+    page.forEach(function (n) { var u = syncCoverUrl(n); if (u) cardUrls[n.id] = u; });
+    page.forEach(function (n) { waterfall.appendChild(cardEl(n)); });
+    renderedCount = end;
+    // 再异步补齐缺缩略图的卡片
+    page.forEach(function (n) { if (!cardUrls[n.id]) asyncCoverFor(n, waterfall); });
   }
 
   function cardEl(note) {
@@ -332,13 +396,13 @@
     var c2 = colInfo(note.category);
     var foot = el('div', 'insp-card-foot');
     var col = el('span', 'insp-pill'); col.textContent = c2.emoji + ' ' + c2.name; foot.appendChild(col);
+    var date = el('span', 'insp-card-date'); date.textContent = dateDot(note.createdAt); foot.appendChild(date);
     body.appendChild(foot);
     if (note.tags && note.tags.length) {
       var tags = el('div', 'insp-card-tags');
       note.tags.slice(0, 3).forEach(function (tg) { var s = el('span', 'insp-mini-tag'); s.textContent = '#' + tg; tags.appendChild(s); });
       body.appendChild(tags);
     }
-    body.appendChild(el('div', 'insp-card-date')).textContent = '📅 ' + dateDot(note.createdAt);
     card.appendChild(body);
     return card;
   }
@@ -491,7 +555,7 @@
       .then(function (saved) {
         var id = saved.id;
         closeNoteModal();
-        render();
+        invalidateNotes(); render();
         if (wasEdit) {
           location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id) + '&from=list';
           gentle({ icon: '✨', title: '更新成功～', sub: '灵感又变得更完整啦 🌸' });
@@ -551,7 +615,7 @@
       DB.deleteCollection(c.id).then(function () {
         return DB.getCollections();
       }).then(function (cols) {
-        collections = cols; renderColList(); renderCatBar(); renderTagBar(); renderColOptions(); render();
+        collections = cols; renderColList(); renderCatBar(); renderTagBar(); renderColOptions(); invalidateNotes(); render();
         toast('已删除合集，相关灵感移至「未分类」');
       }).catch(function () { toast('删除失败'); });
     });
@@ -630,12 +694,12 @@
         info.appendChild(tt); info.appendChild(sub);
         var acts = el('div', 'insp-trash-acts');
         var rb = el('button', 'insp-btn-mini'); rb.textContent = '恢复';
-        rb.onclick = function () { DB.restoreNote(n.id).then(function () { openTrash(); render(); toast('已恢复'); }); };
+        rb.onclick = function () { DB.restoreNote(n.id).then(function () { openTrash(); invalidateNotes(); render(); toast('已恢复'); }); };
         var db2 = el('button', 'insp-btn-mini insp-btn-danger'); db2.textContent = '彻底删除';
         db2.onclick = function () {
           confirmDialog('彻底删除后无法恢复，确定吗？').then(function (ok) {
             if (!ok) return;
-            DB.deleteNotePermanent(n.id).then(function () { openTrash(); render(); toast('已彻底删除'); });
+            DB.deleteNotePermanent(n.id).then(function () { openTrash(); invalidateNotes(); render(); toast('已彻底删除'); });
           });
         };
         acts.appendChild(rb); acts.appendChild(db2);
@@ -666,7 +730,7 @@
           DB.importAll(data).then(function () {
             return DB.getCollections();
           }).then(function (cols) {
-            collections = cols; renderCatBar(); renderTagBar(); renderColOptions(); render();
+            collections = cols; renderCatBar(); renderTagBar(); renderColOptions(); invalidateNotes(); render();
             toast('导入完成 ✨（已合并）');
           }).catch(function () { toast('导入失败：文件损坏'); });
         });
@@ -827,7 +891,7 @@
       collections = cols || [];
       bind();
       renderCatBar(); renderTagBar();
-      DB.purgeExpiredTrash().then(render);
+      DB.purgeExpiredTrash().then(function () { invalidateNotes(); render(); });
     }).catch(function (e) {
       console.error(e);
       toast('灵感专区无法启动：' + (e && e.message ? e.message : '未知错误'));
