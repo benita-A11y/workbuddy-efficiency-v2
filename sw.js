@@ -1,5 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v45：灵感列表图片改为按原始宽高比显示，形成小红书/Instagram 自然高低错落瀑布流；不再强制 1:1 裁切。继承 v44 桌面双栏左右错落、v43 移动端图文交叠分层、v41 全平台换肤与 v35/v36 network-first 根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v45';
+// Service Worker - 离线优先但导航走网络优先（v46：灵感列表性能优化(缩略图尺寸预约宽高比+异步解码消除回流卡顿) + 详情页缩略图优先加载(秒开、原图后台升级) + 修复删除/编辑后返回列表不刷新(脏标记+BroadcastChannel跨页重渲染)；继承 v45 自然比例瀑布流、v44 双栏错落、v41 全平台换肤、v35/v36 network-first。）
+const CACHE_NAME = 'efficiency-app-v46';
 const ASSETS = [
   './',
   './index.html',

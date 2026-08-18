@@ -134,6 +134,18 @@
     });
   }
 
+  // 一次性取出全部缩略图的尺寸 {id: {w, h}}，供列表渲染时提前预约卡片高宽比，
+  // 避免图片加载后瀑布流整体回流造成的卡顿（配合 css column 布局）。
+  function getAllThumbsDims() {
+    return store(STORE_THUMBS, 'readonly').then(function (st) {
+      return reqP(st.getAll());
+    }).then(function (list) {
+      var m = {};
+      (list || []).forEach(function (r) { if (r && r.id) m[r.id] = { w: r.width || 0, h: r.height || 0 }; });
+      return m;
+    });
+  }
+
   /* ---------- 笔记 ---------- */
   function saveNote(note) {
     if (!note.id) note.id = genId('note');
@@ -456,6 +468,7 @@
     addThumbnail: addThumbnail,
     getThumbnailBlob: getThumbnailBlob,
     getAllThumbsMap: getAllThumbsMap,
+    getAllThumbsDims: getAllThumbsDims,
     deleteThumbnail: deleteThumbnail,
     saveNote: saveNote,
     getNote: getNote,

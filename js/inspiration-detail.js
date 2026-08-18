@@ -35,9 +35,22 @@
   // 合集信息全部来自数据层（支持用户自定义合集），不再硬编码穿搭/妆容
   function catInfo(c) { return DB.collectionInfo(c || 'uncategorized', collections); }
 
+  // 将某张图写入 slide：先占位骨架，缩略图/原图到达即替换（缩略图优先，毫秒级显示，原图后台升级）
+  function setSlideImg(slide, idx, url) {
+    var ph = slide.querySelector('.insd-slide-ph'); if (ph) ph.remove();
+    var img = document.createElement('img');
+    img.className = 'insd-img'; img.src = url; img.alt = ''; img.decoding = 'async';
+    img.onclick = function () { openLightbox(idx); };
+    var old = slide.querySelector('.insd-img');
+    if (old) old.replaceWith(img); else slide.appendChild(img);
+  }
+
   /* ---------- 渲染 ---------- */
   function render(n) {
     isMine = !n.imported;
+    // 释放上一条的 objectURL，避免内存泄漏与索引错乱
+    imgUrls.forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} });
+    imgUrls = [];
     // 图片区
     var box = $('insdImgs');
     // 清掉旧 slides（保留 pager 由后面重建）
@@ -52,31 +65,34 @@
       box.insertBefore(ph, pager);
       pager.hidden = true;
     } else {
-      Promise.all(refs.map(function (iid) {
-        return DB.getImageBlob(iid).then(function (blob) {
-          if (!blob) return null;
-          var u = URL.createObjectURL(blob); imgUrls.push(u);
-          return u;
-        }).catch(function () { return null; });
-      })).then(function (urls) {
-        urls.filter(Boolean).forEach(function (u, i) {
-          var slide = document.createElement('div');
-          slide.className = 'insd-slide';
-          var img = document.createElement('img');
-          img.className = 'insd-img'; img.src = u; img.alt = '';
-          img.onclick = function () { openLightbox(i); };
-          slide.appendChild(img);
-          box.insertBefore(slide, pager);
-        });
-        if (urls.filter(Boolean).length > 1) {
-          pager.hidden = false;
-          pager.textContent = '1/' + urls.filter(Boolean).length;
-          box.onscroll = function () {
-            var idx = Math.round(box.scrollLeft / box.clientWidth);
-            pager.textContent = (idx + 1) + '/' + urls.filter(Boolean).length;
-          };
-        } else { pager.hidden = true; }
+      // 先建好每张 slide 的占位骨架（布局稳定、不跳动），再缩略图优先加载、原图后台升级
+      refs.forEach(function (iid, idx) {
+        var slide = document.createElement('div');
+        slide.className = 'insd-slide';
+        var ph2 = document.createElement('div');
+        ph2.className = 'insd-slide-ph'; ph2.textContent = '🌿';
+        slide.appendChild(ph2);
+        box.insertBefore(slide, pager);
+        var thumbRef = (n.thumbRefs && n.thumbRefs[idx]) || null;
+        var thumbP = thumbRef ? DB.getThumbnailBlob(thumbRef) : Promise.resolve(null);
+        thumbP.then(function (tb) {
+          if (tb) { var u = URL.createObjectURL(tb); imgUrls[idx] = u; setSlideImg(slide, idx, u); }
+          return DB.getImageBlob(iid);
+        }).then(function (blob) {
+          if (!blob) return;
+          var fu = URL.createObjectURL(blob);
+          if (imgUrls[idx]) { try { URL.revokeObjectURL(imgUrls[idx]); } catch (e) {} }
+          imgUrls[idx] = fu; setSlideImg(slide, idx, fu);
+        }).catch(function () {});
       });
+      if (refs.length > 1) {
+        pager.hidden = false;
+        pager.textContent = '1/' + refs.length;
+        box.onscroll = function () {
+          var idx = Math.round(box.scrollLeft / box.clientWidth);
+          pager.textContent = (idx + 1) + '/' + refs.length;
+        };
+      } else { pager.hidden = true; }
     }
 
     // 发布者
@@ -183,7 +199,12 @@
   function doDelete() {
     $('insdConfirm').hidden = true;
     if (!note) return;
-    DB.trashNote(note.id).then(function () { goBack(); }).catch(function () { toast('删除失败'); });
+    DB.trashNote(note.id).then(function () {
+      // 通知列表页（跨页）删除后需重渲染，避免「删了但卡片还在」的错觉
+      try { sessionStorage.setItem('wb_insp_dirty', '1'); } catch (e) {}
+      try { var bc = new BroadcastChannel('wb_insp'); bc.postMessage('mutated'); } catch (e) {}
+      goBack();
+    }).catch(function () { toast('删除失败'); });
   }
 
   /* ---------- 灯箱（大图预览 + 缩放） ---------- */

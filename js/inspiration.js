@@ -165,6 +165,7 @@
   var editing = null;
   var cardUrls = {};
   var thumbMap = {};            // {thumbId: blob} 列表渲染时一次性取出，避免逐卡读 IDB
+  var thumbDims = {};           // {thumbId: {w, h}} 缩略图尺寸，用于提前预约卡片宽高比（防回流卡顿）
   var activeNotesCache = null;  // 活跃笔记缓存，避免重复全量读取
   var allNotes = [];
   var currentList = [];
@@ -310,7 +311,10 @@
     var ph = card.querySelector('.insp-card-ph');
     if (!ph) return;
     var img = el('img', 'insp-card-cover');
-    img.alt = ''; img.src = url; img.loading = 'lazy';
+    img.alt = ''; img.src = url; img.loading = 'lazy'; img.decoding = 'async';
+    var tr = n.thumbRefs && n.thumbRefs[0];
+    var dim = tr && thumbDims[tr];
+    if (dim && dim.w && dim.h) img.style.aspectRatio = dim.w + '/' + dim.h;
     img.onload = function () { img.classList.add('loaded'); };
     ph.replaceWith(img);
     if ((n.imageRefs || []).length > 1) {
@@ -332,6 +336,7 @@
         blobToThumb(blob, 400).then(function (r) {
           DB.addThumbnail(r.blob, r.blob.type || 'image/webp', r.w, r.h).then(function (tid) {
             thumbMap[tid] = r.blob;
+            thumbDims[tid] = { w: r.w, h: r.h };
             if (!n.thumbRefs) n.thumbRefs = [];
             n.thumbRefs[0] = tid;
             DB.saveNote(n).catch(function () {}).then(function () { paintCover(n, waterfall, URL.createObjectURL(r.blob)); });
@@ -348,9 +353,10 @@
   function invalidateNotes() { activeNotesCache = null; }
 
   function render() {
-    Promise.all([loadActiveNotes(), DB.getAllThumbsMap()]).then(function (res) {
+    Promise.all([loadActiveNotes(), DB.getAllThumbsMap(), DB.getAllThumbsDims()]).then(function (res) {
       allNotes = res[0];
       thumbMap = res[1] || {};
+      thumbDims = res[2] || {};
       var filtered = filterNotes(allNotes);
       currentList = filtered;
       renderCatBar(); renderTagBar();
@@ -380,7 +386,10 @@
     var card = el('div', 'insp-card'); card.dataset.id = note.id;
     if (cardUrls[note.id]) {
       var img = el('img', 'insp-card-cover');
-      img.src = cardUrls[note.id]; img.alt = ''; img.loading = 'lazy';
+      img.src = cardUrls[note.id]; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
+      var tr = note.thumbRefs && note.thumbRefs[0];
+      var dim = tr && thumbDims[tr];
+      if (dim && dim.w && dim.h) img.style.aspectRatio = dim.w + '/' + dim.h;
       img.onload = function () { img.classList.add('loaded'); };
       card.appendChild(img);
       if ((note.imageRefs || []).length > 1) {
@@ -557,6 +566,7 @@
         closeNoteModal();
         invalidateNotes(); render();
         if (wasEdit) {
+          markDirty();
           location.href = 'inspiration-detail.html?id=' + encodeURIComponent(id) + '&from=list';
           gentle({ icon: '✨', title: '更新成功～', sub: '灵感又变得更完整啦 🌸' });
         } else {
@@ -773,6 +783,23 @@
   }
   window.InspirationScroll = { save: saveInspScroll, restore: restoreInspScroll };
 
+  /* ---------- 跨页刷新（删除/编辑后返回列表时同步最新数据） ---------- */
+  // 详情页删除/编辑会置脏标记并广播；列表页在返回(focus/pageshow)或收到广播时重渲染，
+  // 避免「删除后卡片还在」的错觉。数据层只增不删，trashNote 仅软删除，回收站 30 天可恢复。
+  var DIRTY_KEY = 'wb_insp_dirty';
+  var _bc = null;
+  function markDirty() {
+    try { sessionStorage.setItem(DIRTY_KEY, '1'); } catch (e) {}
+    try { (_bc || (_bc = new BroadcastChannel('wb_insp'))).postMessage('mutated'); } catch (e) {}
+  }
+  function onReturnFocus() {
+    var dirty = false;
+    try { dirty = !!sessionStorage.getItem(DIRTY_KEY); } catch (e) {}
+    if (!dirty) return;
+    try { sessionStorage.removeItem(DIRTY_KEY); } catch (e) {}
+    invalidateNotes(); render();
+  }
+
   /* ---------- 绑定 ---------- */
   function bind() {
     $('inspHome').onclick = function () {
@@ -890,6 +917,10 @@
     }).then(function (cols) {
       collections = cols || [];
       bind();
+      // 返回列表时若发生过删除/编辑，自动重渲染以反映最新数据
+      window.addEventListener('pageshow', onReturnFocus);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) onReturnFocus(); });
+      try { _bc = new BroadcastChannel('wb_insp'); _bc.onmessage = function (e) { if (e.data === 'mutated') onReturnFocus(); }; } catch (e) {}
       renderCatBar(); renderTagBar();
       DB.purgeExpiredTrash().then(function () { invalidateNotes(); render(); });
     }).catch(function (e) {
