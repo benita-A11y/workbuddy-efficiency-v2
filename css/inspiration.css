@@ -599,6 +599,9 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
  * 灵感详情页 / 编辑页（独立页面，小红书风格）
  * v42：详情页改版 —— 顶栏更窄(44px)、图片不再满屏黑底而是留边圆角窄图、
  *      图文同屏（标题/正文首屏即可见，无需滑动）、桌面端左图右文双栏。
+ * v43：图文交叠分层 —— 图片浮起圆角卡片+柔和阴影；内容白卡用负 margin-top 与图片
+ *      底部交叠（图藏卡后），作者头像上提跨边界，强化小红书式"交错"层次；作者/文案
+ *      白卡加主题色渐变。桌面双栏重置重叠(z-index/margin/shadow)。
  * ============================================================ */
 
 /* ---------- 详情页 ---------- */
@@ -634,7 +637,7 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
   position: relative; display: flex; overflow-x: auto;
   scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
   background: var(--bg-page, #f5f5f7); scrollbar-width: none;
-  padding: 10px 14px; box-sizing: border-box;
+  padding: 12px 14px 8px; box-sizing: border-box;
 }
 .insd-imgs::-webkit-scrollbar { display: none; }
 .insd-slide {
@@ -642,31 +645,41 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
   display: flex; align-items: center; justify-content: center; background: transparent;
 }
 .insd-img {
-  width: 100%; height: auto; max-height: 56vh; object-fit: contain; display: block;
-  border-radius: 14px; background: #f0f0f2;
+  width: 100%; height: auto; max-height: 60vh; object-fit: contain; display: block;
+  border-radius: 18px; background: #f0f0f2;
+  box-shadow: 0 10px 30px rgba(90, 80, 110, .12);
 }
 .insd-slide-ph {
   width: 100%; min-height: 38vh; display: flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, #f3f5f8, #e9edf2); color: #c2c9d4; font-size: 56px; border-radius: 14px;
 }
 .insd-pager {
-  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 5;
+  position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 5;
   background: rgba(0,0,0,.45); color: #fff; font-size: 12px; padding: 3px 11px; border-radius: 999px; pointer-events: none;
 }
 .insd-pager[hidden] { display: none; }
 
-/* 内容区包裹（发布者 + 文案 + 互动）：移动端在图片下方，桌面端在图片右侧 */
-.insd-content { background: var(--bg-page, #f5f5f7); }
+/* 内容区包裹（发布者 + 文案 + 互动）：移动端在图片下方并与图片底部交叠，桌面端在图片右侧 */
+.insd-content {
+  background: var(--bg-page, #f5f5f7);
+  position: relative; z-index: 2;
+  margin-top: -18px;          /* 与图片底部交叠，小红书式分层卡片：图藏卡后 */
+  padding: 0 8px;
+}
 
-/* 发布者（白卡顶部） */
+/* 发布者（白卡顶部，交叠在图片下沿，圆角露出形成分层） */
 .insd-author {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 14px 8px; background: #fff; border-radius: 18px 18px 0 0; margin-top: 10px;
+  padding: 22px 16px 10px; background: linear-gradient(180deg, #fff 0%, var(--insp-soft, #EFEAF7) 100%);
+  border-radius: 26px 26px 0 0; margin-top: 0; position: relative; z-index: 3;
+  box-shadow: 0 -6px 18px rgba(90, 80, 110, .06);
 }
 .insd-author-left { display: flex; align-items: center; gap: 10px; }
 .insd-avatar {
-  width: 40px; height: 40px; border-radius: 50%; background: var(--insp-soft, #EFEAF7);
-  display: flex; align-items: center; justify-content: center; font-size: 20px;
+  width: 44px; height: 44px; border-radius: 50%; background: var(--insp-soft, #EFEAF7);
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  border: 2px solid #fff; box-shadow: 0 2px 8px rgba(90, 80, 110, .18);
+  transform: translateY(-6px);   /* 头像微微上提，跨图片边界，强化"交错"层次 */
 }
 .insd-author-name { font-size: 15px; font-weight: 600; color: #333; }
 .insd-author-sub { font-size: 12px; color: #999; margin-top: 1px; }
@@ -676,8 +689,8 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
 }
 .insd-follow.followed { border-color: #ccc; color: #999; background: #f2f2f2; }
 
-/* 文案（白卡主体，首屏即可见标题与正文，v42） */
-.insd-text { padding: 4px 14px 18px; background: #fff; border-radius: 0 0 18px 18px; }
+/* 文案（白卡主体，首屏即可见标题与正文；渐变与作者卡衔接，v43） */
+.insd-text { padding: 4px 16px 22px; background: linear-gradient(180deg, var(--insp-soft, #EFEAF7) 0%, #fff 22%); border-radius: 0 0 22px 22px; }
 .insd-title { font-size: 18px; font-weight: 700; margin: 8px 0 8px; line-height: 1.4; color: #333; }
 .insd-body { font-size: 15px; line-height: 1.8; color: #444; white-space: pre-wrap; word-break: break-word; }
 .insd-tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
@@ -701,12 +714,12 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
     flex: 0 0 50%; max-width: 50%; padding: 18px;
     background: #fff; border-right: 1px solid var(--border-color, #eee);
   }
-  .insd-img { max-height: 86vh; }
+  .insd-img { max-height: 86vh; box-shadow: none; }
   .insd-content {
     flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center;
-    padding: 24px 8px;
+    padding: 24px 8px; margin-top: 0; z-index: auto;
   }
-  .insd-author { background: transparent; border-radius: 0; margin-top: 0; padding: 0 28px 12px; }
+  .insd-author { background: transparent; border-radius: 0; margin-top: 0; padding: 0 28px 12px; box-shadow: none; z-index: auto; }
   .insd-text { background: transparent; border-radius: 0; padding: 8px 28px 18px; }
   .insd-stats { background: transparent; padding: 14px 28px; }
   .insd-bar { max-width: 980px; }

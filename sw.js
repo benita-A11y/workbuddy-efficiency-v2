@@ -1,6 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v42：灵感详情页改小红书风 —— 顶栏更窄(44px)、图片留边圆角窄图、图文同屏(标题/正文首屏可见)、
-// 桌面端左图右文双栏；继承 v41 列表满屏平铺与全平台 --theme-* 换肤、数据层只增不删；继承 v35/v36 network-first 根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v42';
+// Service Worker - 离线优先但导航走网络优先（v43：灵感详情页图文交叠分层 —— 图片浮起圆角卡片+柔和阴影、内容白卡负margin与图片底交叠、头像上提跨边界、作者/文案主题渐变；桌面双栏重置重叠；继承 v42/v41 与 v35/v36 network-first 根治"刷新看不到"。）
+const CACHE_NAME = 'efficiency-app-v43';
 const ASSETS = [
   './',
   './index.html',
