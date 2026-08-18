@@ -1,5 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v46：灵感列表性能优化(缩略图尺寸预约宽高比+异步解码消除回流卡顿) + 详情页缩略图优先加载(秒开、原图后台升级) + 修复删除/编辑后返回列表不刷新(脏标记+BroadcastChannel跨页重渲染)；继承 v45 自然比例瀑布流、v44 双栏错落、v41 全平台换肤、v35/v36 network-first。）
-const CACHE_NAME = 'efficiency-app-v46';
+// Service Worker - 离线优先但导航走网络优先（v47：灵感性能再压榨 —— 列表缩略图读取合并为单次事务(getAllThumbs)、缺图生成限并发3个避免主线程冻结、卡片加 content-visibility:auto 跳过离屏渲染；详情页无缩略图时即时生成缩略图秒显再升级原图。继承 v46/v45/v41 与 v35/v36 network-first。）
+const CACHE_NAME = 'efficiency-app-v47';
 const ASSETS = [
   './',
   './index.html',

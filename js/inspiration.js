@@ -346,6 +346,25 @@
     }).catch(function () {});
   }
 
+  /* ---------- 缺图缩略图生成：限并发队列 ---------- */
+  // 早期/导入的笔记可能还没有缩略图，首次进入需要读原图并生成 webp。
+  // 若一次性对全部缺图卡片并发生成，主线程会被「解码大图 + canvas 编码」占满而卡死。
+  // 这里用一个小并发池（最多 3 个）串行消化，保证页面始终可响应、首屏秒出。
+  var _genQ = [], _genRun = 0, _GEN_MAX = 3;
+  function queueCoverGen(n, waterfall) {
+    _genQ.push([n, waterfall]);
+    pumpCoverGen();
+  }
+  function pumpCoverGen() {
+    if (_genRun >= _GEN_MAX) return;          // 已达上限，等当前任务结束再取
+    var job = _genQ.shift();
+    if (!job) return;
+    _genRun++;
+    var n = job[0], waterfall = job[1];
+    asyncCoverFor(n, waterfall).then(finishGen, finishGen);
+  }
+  function finishGen() { _genRun--; pumpCoverGen(); }
+
   function loadActiveNotes() {
     if (activeNotesCache) return Promise.resolve(activeNotesCache);
     return DB.getActiveNotes().then(function (n) { activeNotesCache = n; return n; });
@@ -353,10 +372,10 @@
   function invalidateNotes() { activeNotesCache = null; }
 
   function render() {
-    Promise.all([loadActiveNotes(), DB.getAllThumbsMap(), DB.getAllThumbsDims()]).then(function (res) {
+    Promise.all([loadActiveNotes(), DB.getAllThumbs()]).then(function (res) {
       allNotes = res[0];
-      thumbMap = res[1] || {};
-      thumbDims = res[2] || {};
+      thumbMap = (res[1] && res[1].blobs) || {};
+      thumbDims = (res[1] && res[1].dims) || {};
       var filtered = filterNotes(allNotes);
       currentList = filtered;
       renderCatBar(); renderTagBar();
@@ -378,8 +397,8 @@
     page.forEach(function (n) { var u = syncCoverUrl(n); if (u) cardUrls[n.id] = u; });
     page.forEach(function (n) { waterfall.appendChild(cardEl(n)); });
     renderedCount = end;
-    // 再异步补齐缺缩略图的卡片
-    page.forEach(function (n) { if (!cardUrls[n.id]) asyncCoverFor(n, waterfall); });
+    // 再异步补齐缺缩略图的卡片（限并发，避免一次性解码 N 张大图冻结主线程）
+    page.forEach(function (n) { if (!cardUrls[n.id]) queueCoverGen(n, waterfall); });
   }
 
   function cardEl(note) {

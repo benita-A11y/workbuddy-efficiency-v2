@@ -121,28 +121,18 @@
     return store(STORE_THUMBS, 'readwrite').then(function (st) { return reqP(st.delete(id)); });
   }
 
-  // 一次性取出当前库内全部缩略图，返回 {id: blob} 映射。
-  // 用于列表渲染时把「N 张卡片 × 各自一次 IDB 事务」合并为「1 次事务」，
-  // 大幅缩短点入灵感区的等待时间（缩略图本身很小，全量读取代价极低）。
-  function getAllThumbsMap() {
+  // 一次性取出当前库内全部缩略图：同时返回 {id: blob} 与 {id: {w, h}}。
+  // 合并原 getAllThumbsMap / getAllThumbsDims 为「1 次 IDB 事务」，
+  // 避免列表渲染时把整个缩略图库读两遍，进一步缩短点入灵感区的等待时间。
+  function getAllThumbs() {
     return store(STORE_THUMBS, 'readonly').then(function (st) {
       return reqP(st.getAll());
     }).then(function (list) {
-      var m = {};
-      (list || []).forEach(function (r) { if (r && r.id) m[r.id] = r.blob; });
-      return m;
-    });
-  }
-
-  // 一次性取出全部缩略图的尺寸 {id: {w, h}}，供列表渲染时提前预约卡片高宽比，
-  // 避免图片加载后瀑布流整体回流造成的卡顿（配合 css column 布局）。
-  function getAllThumbsDims() {
-    return store(STORE_THUMBS, 'readonly').then(function (st) {
-      return reqP(st.getAll());
-    }).then(function (list) {
-      var m = {};
-      (list || []).forEach(function (r) { if (r && r.id) m[r.id] = { w: r.width || 0, h: r.height || 0 }; });
-      return m;
+      var blobs = {}, dims = {};
+      (list || []).forEach(function (r) {
+        if (r && r.id) { blobs[r.id] = r.blob; dims[r.id] = { w: r.width || 0, h: r.height || 0 }; }
+      });
+      return { blobs: blobs, dims: dims };
     });
   }
 
@@ -467,8 +457,7 @@
     deleteImage: deleteImage,
     addThumbnail: addThumbnail,
     getThumbnailBlob: getThumbnailBlob,
-    getAllThumbsMap: getAllThumbsMap,
-    getAllThumbsDims: getAllThumbsDims,
+    getAllThumbs: getAllThumbs,
     deleteThumbnail: deleteThumbnail,
     saveNote: saveNote,
     getNote: getNote,

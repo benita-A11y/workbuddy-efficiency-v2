@@ -44,6 +44,30 @@
     var old = slide.querySelector('.insd-img');
     if (old) old.replaceWith(img); else slide.appendChild(img);
   }
+  function genThumb(blob) {
+    return new Promise(function (res, rej) {
+      var url = URL.createObjectURL(blob), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth || 400, h = img.naturalHeight || 400;
+        var tw = Math.min(400, w), th = Math.max(1, Math.round(h * (tw / w)));
+        var c = document.createElement('canvas'); c.width = tw; c.height = th;
+        try { c.getContext('2d').drawImage(img, 0, 0, tw, th); } catch (e) {}
+        URL.revokeObjectURL(url);
+        if (c.toBlob) c.toBlob(function (b) { if (b) res(b); else rej(new Error('null')); }, 'image/webp', 0.82);
+        else rej(new Error('no toBlob'));
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('decode fail')); };
+      img.src = url;
+    });
+  }
+  // 把一张（缩略图/原图）blob 显示到 slide，并管理 imgUrls[idx] 的回收，避免泄漏与错位
+  function showThumb(idx, slide, blob) {
+    try {
+      var u = URL.createObjectURL(blob);
+      if (imgUrls[idx]) { try { URL.revokeObjectURL(imgUrls[idx]); } catch (e) {} }
+      imgUrls[idx] = u; setSlideImg(slide, idx, u);
+    } catch (e) {}
+  }
 
   /* ---------- 渲染 ---------- */
   function render(n) {
@@ -76,8 +100,13 @@
         var thumbRef = (n.thumbRefs && n.thumbRefs[idx]) || null;
         var thumbP = thumbRef ? DB.getThumbnailBlob(thumbRef) : Promise.resolve(null);
         thumbP.then(function (tb) {
-          if (tb) { var u = URL.createObjectURL(tb); imgUrls[idx] = u; setSlideImg(slide, idx, u); }
-          return DB.getImageBlob(iid);
+          if (tb) { showThumb(idx, slide, tb); return DB.getImageBlob(iid); }
+          // 没有缩略图：先读原图、即时生成缩略图秒显示，再升级为原图（避免直接等大图卡顿）
+          return DB.getImageBlob(iid).then(function (blob) {
+            if (!blob) return;
+            genThumb(blob).then(function (gt) { showThumb(idx, slide, gt); }).catch(function () {});
+            return blob;
+          });
         }).then(function (blob) {
           if (!blob) return;
           var fu = URL.createObjectURL(blob);

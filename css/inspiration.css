@@ -108,6 +108,7 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
   box-shadow: var(--shadow-card, 0 2px 12px rgba(0,0,0,0.06));
   overflow: hidden; cursor: pointer;
   transition: transform .18s ease, box-shadow .18s ease;
+  content-visibility: auto; contain-intrinsic-size: auto 360px;
 }
 .insp-card:active { transform: scale(0.97); }
 .insp-card:hover { box-shadow: var(--shadow-hover, 0 4px 20px rgba(0,0,0,0.1)); }
@@ -563,6 +564,7 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
   margin-bottom: 12px; cursor: pointer;
   transition: transform .18s ease, box-shadow .18s ease;
   break-inside: avoid;
+  content-visibility: auto; contain-intrinsic-size: auto 320px;
 }
 .insp-card.pressing { transform: scale(.97); box-shadow: 0 1px 4px rgba(80, 70, 100, .12); }
 .insp-card-cover {
