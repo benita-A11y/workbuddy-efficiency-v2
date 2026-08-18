@@ -1,5 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v43：灵感详情页图文交叠分层 —— 图片浮起圆角卡片+柔和阴影、内容白卡负margin与图片底交叠、头像上提跨边界、作者/文案主题渐变；桌面双栏重置重叠；继承 v42/v41 与 v35/v36 network-first 根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v43';
+// Service Worker - 离线优先但导航走网络优先（v44：桌面双栏左右错落 —— 右栏文字浮起圆角白卡下移~52px与左图上下错开(左右排列交错)、左栏顶部对齐；移动端保持v43图文交叠分层；继承 v43/v42/v41 与 v35/v36 network-first 根治"刷新看不到"。）
+const CACHE_NAME = 'efficiency-app-v44';
 const ASSETS = [
   './',
   './index.html',

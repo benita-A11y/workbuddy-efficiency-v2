@@ -602,6 +602,8 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
  * v43：图文交叠分层 —— 图片浮起圆角卡片+柔和阴影；内容白卡用负 margin-top 与图片
  *      底部交叠（图藏卡后），作者头像上提跨边界，强化小红书式"交错"层次；作者/文案
  *      白卡加主题色渐变。桌面双栏重置重叠(z-index/margin/shadow)。
+ * v44：桌面双栏左右错落 —— 右栏文字做成浮起圆角白卡并整体下移 ~52px，与左图上下错开
+ *      （"左右排列交错"），左栏顶部对齐；移动端仍保持 v43 图文交叠分层。
  * ============================================================ */
 
 /* ---------- 详情页 ---------- */
@@ -705,24 +707,30 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
 }
 .insd-stat b { color: #333; }
 
-/* ---------- 详情页：桌面端左图右文双栏（小红书网页版式，v42） ---------- */
+/* ---------- 详情页：桌面端左图右文双栏（小红书网页版式，v44 左右错落） ---------- */
 @media (min-width: 760px) {
-  .insd-app { max-width: 980px; }
+  .insd-app { max-width: 1000px; }
   .insd-nav { height: 48px; }
-  .insd-scroll { display: flex; align-items: stretch; padding-bottom: 64px; }
+  /* 顶端对齐，让左右两栏分别从各自顶部起排，便于右栏下移形成错落 */
+  .insd-scroll { display: flex; align-items: flex-start; padding-bottom: 64px; }
+  /* 左栏：图片，顶部对齐，露出在小白卡旁 */
   .insd-imgs {
-    flex: 0 0 50%; max-width: 50%; padding: 18px;
+    flex: 0 0 48%; max-width: 48%; padding: 22px 18px 18px;
     background: #fff; border-right: 1px solid var(--border-color, #eee);
   }
-  .insd-img { max-height: 86vh; box-shadow: none; }
+  .insd-img { max-height: 82vh; box-shadow: none; }
+  /* 右栏：文字做成浮起圆角白卡，整体下移 ~52px，与左图上下错开（"左右排列交错"） */
   .insd-content {
-    flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center;
-    padding: 24px 8px; margin-top: 0; z-index: auto;
+    flex: 1 1 auto; min-width: 0; align-self: flex-start;
+    display: flex; flex-direction: column; justify-content: flex-start;
+    margin: 52px 24px 24px; padding: 30px 32px;
+    background: #fff; border-radius: 22px; box-shadow: 0 14px 38px rgba(90, 80, 110, .14);
+    z-index: auto;
   }
-  .insd-author { background: transparent; border-radius: 0; margin-top: 0; padding: 0 28px 12px; box-shadow: none; z-index: auto; }
-  .insd-text { background: transparent; border-radius: 0; padding: 8px 28px 18px; }
-  .insd-stats { background: transparent; padding: 14px 28px; }
-  .insd-bar { max-width: 980px; }
+  .insd-author { background: transparent; border-radius: 0; margin-top: 0; padding: 0 0 12px; box-shadow: none; z-index: auto; }
+  .insd-text { background: transparent; border-radius: 0; padding: 8px 0 18px; }
+  .insd-stats { background: transparent; padding: 14px 0; }
+  .insd-bar { max-width: 1000px; }
 }
 
 /* 底部固定操作栏 */
