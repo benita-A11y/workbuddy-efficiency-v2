@@ -1,5 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v44：桌面双栏左右错落 —— 右栏文字浮起圆角白卡下移~52px与左图上下错开(左右排列交错)、左栏顶部对齐；移动端保持v43图文交叠分层；继承 v43/v42/v41 与 v35/v36 network-first 根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v44';
+// Service Worker - 离线优先但导航走网络优先（v45：灵感列表图片改为按原始宽高比显示，形成小红书/Instagram 自然高低错落瀑布流；不再强制 1:1 裁切。继承 v44 桌面双栏左右错落、v43 移动端图文交叠分层、v41 全平台换肤与 v35/v36 network-first 根治"刷新看不到"。）
+const CACHE_NAME = 'efficiency-app-v45';
 const ASSETS = [
   './',
   './index.html',
