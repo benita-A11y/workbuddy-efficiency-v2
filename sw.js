@@ -1,7 +1,6 @@
-// Service Worker - 离线优先但导航走网络优先（v41：灵感列表改小红书/Instagram 满屏平铺风 —— 手机端去边(3px padding/gap)、
-// 图片主导卡片(去阴影/透明底/圆角8)、隐藏描述与标签使图墙更干净；编辑页补挂 theme-apply.js 跟随换肤；
-// 全平台卡片配色改用 --theme-* 变量统一联动换肤；数据层只增不删，用户数据永不丢失。继承 v35/v36 network-first 根治"刷新看不到"。）
-const CACHE_NAME = 'efficiency-app-v41';
+// Service Worker - 离线优先但导航走网络优先（v42：灵感详情页改小红书风 —— 顶栏更窄(44px)、图片留边圆角窄图、图文同屏(标题/正文首屏可见)、
+// 桌面端左图右文双栏；继承 v41 列表满屏平铺与全平台 --theme-* 换肤、数据层只增不删；继承 v35/v36 network-first 根治"刷新看不到"。）
+const CACHE_NAME = 'efficiency-app-v42';
 const ASSETS = [
   './',
   './index.html',

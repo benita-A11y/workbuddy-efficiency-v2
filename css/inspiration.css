@@ -597,6 +597,8 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
 
 /* ============================================================
  * 灵感详情页 / 编辑页（独立页面，小红书风格）
+ * v42：详情页改版 —— 顶栏更窄(44px)、图片不再满屏黑底而是留边圆角窄图、
+ *      图文同屏（标题/正文首屏即可见，无需滑动）、桌面端左图右文双栏。
  * ============================================================ */
 
 /* ---------- 详情页 ---------- */
@@ -605,47 +607,62 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
   background: var(--bg-page, #f5f5f7);
   display: flex; flex-direction: column; position: relative;
 }
+/* 顶部导航栏：更窄更轻，让内容直接呈现（v42） */
 .insd-nav {
   position: sticky; top: 0; z-index: 30;
-  display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 8px;
-  background: #fff; border-bottom: 1px solid var(--border-color, #eee);
+  display: flex; align-items: center; justify-content: space-between;
+  height: 44px; padding: 0 6px;
+  background: rgba(255,255,255,0.92);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--border-color, #eee);
 }
 .insd-nav-spacer { flex: 1; }
-.insd-nav-title { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-size: 17px; font-weight: 700; text-align: center; color: #333; }
+.insd-nav-title { position: absolute; left: 50%; transform: translateX(-50%); margin: 0; font-size: 16px; font-weight: 700; text-align: center; color: #333; }
 .insd-nav-actions { display: flex; align-items: center; gap: 2px; }
 .insd-nav-btn {
   border: none; background: transparent; cursor: pointer;
-  font-size: 22px; line-height: 1; color: #666; padding: 6px 10px; border-radius: 10px;
+  font-size: 20px; line-height: 1; color: #666; padding: 5px 9px; border-radius: 10px;
 }
 .insd-nav-btn:active { background: #f2f2f2; }
-.insd-nav-back { font-size: 16px; font-weight: 600; color: var(--theme-primary, #B8C5D6); }
+.insd-nav-back { font-size: 15px; font-weight: 600; color: var(--theme-primary, #B8C5D6); }
+
 .insd-scroll { flex: 1; overflow-y: auto; padding-bottom: 70px; -webkit-overflow-scrolling: touch; }
 
-/* 图片区：横向滑动，满宽，保持原比例 */
+/* 图片区：轻量白底、留边、圆角、窄图（不再满屏黑底，v42） */
 .insd-imgs {
   position: relative; display: flex; overflow-x: auto;
   scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-  background: #000; scrollbar-width: none;
-  padding: 0 8px; box-sizing: border-box;
+  background: var(--bg-page, #f5f5f7); scrollbar-width: none;
+  padding: 10px 14px; box-sizing: border-box;
 }
 .insd-imgs::-webkit-scrollbar { display: none; }
 .insd-slide {
   flex: 0 0 100%; scroll-snap-align: center;
-  display: flex; align-items: center; justify-content: center; background: #000;
+  display: flex; align-items: center; justify-content: center; background: transparent;
 }
-.insd-img { width: 100%; height: auto; max-height: 82vh; object-fit: contain; display: block; }
+.insd-img {
+  width: 100%; height: auto; max-height: 56vh; object-fit: contain; display: block;
+  border-radius: 14px; background: #f0f0f2;
+}
 .insd-slide-ph {
-  width: 100%; min-height: 50vh; display: flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, #f3f5f8, #e9edf2); color: #c2c9d4; font-size: 56px;
+  width: 100%; min-height: 38vh; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, #f3f5f8, #e9edf2); color: #c2c9d4; font-size: 56px; border-radius: 14px;
 }
 .insd-pager {
-  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 5;
-  background: rgba(0,0,0,.5); color: #fff; font-size: 12px; padding: 3px 11px; border-radius: 999px; pointer-events: none;
+  position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 5;
+  background: rgba(0,0,0,.45); color: #fff; font-size: 12px; padding: 3px 11px; border-radius: 999px; pointer-events: none;
 }
 .insd-pager[hidden] { display: none; }
 
-/* 发布者 */
-.insd-author { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #fff; }
+/* 内容区包裹（发布者 + 文案 + 互动）：移动端在图片下方，桌面端在图片右侧 */
+.insd-content { background: var(--bg-page, #f5f5f7); }
+
+/* 发布者（白卡顶部） */
+.insd-author {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 14px 8px; background: #fff; border-radius: 18px 18px 0 0; margin-top: 10px;
+}
 .insd-author-left { display: flex; align-items: center; gap: 10px; }
 .insd-avatar {
   width: 40px; height: 40px; border-radius: 50%; background: var(--insp-soft, #EFEAF7);
@@ -659,18 +676,41 @@ body { background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); }
 }
 .insd-follow.followed { border-color: #ccc; color: #999; background: #f2f2f2; }
 
-/* 文案 */
-.insd-text { padding: 6px 14px 14px; background: #fff; }
-.insd-title { font-size: 17px; font-weight: 700; margin: 6px 0; line-height: 1.4; color: #333; }
-.insd-body { font-size: 15px; line-height: 1.75; color: #444; white-space: pre-wrap; word-break: break-word; }
-.insd-tags { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+/* 文案（白卡主体，首屏即可见标题与正文，v42） */
+.insd-text { padding: 4px 14px 18px; background: #fff; border-radius: 0 0 18px 18px; }
+.insd-title { font-size: 18px; font-weight: 700; margin: 8px 0 8px; line-height: 1.4; color: #333; }
+.insd-body { font-size: 15px; line-height: 1.8; color: #444; white-space: pre-wrap; word-break: break-word; }
+.insd-tags { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
 .insd-tags[hidden] { display: none; }
 .insd-tag { font-size: 13px; color: var(--insp-strong, #9E89C4); background: var(--insp-soft, #EFEAF7); padding: 4px 11px; border-radius: 999px; }
 .insd-time { margin-top: 12px; font-size: 12px; color: #999; }
 
 /* 互动数据 */
-.insd-stats { display: flex; gap: 18px; padding: 12px 14px; background: #fff; border-top: 1px solid #f2f2f2; font-size: 13px; color: #666; }
+.insd-stats {
+  display: flex; gap: 18px; padding: 14px; background: var(--bg-page, #f5f5f7);
+  font-size: 13px; color: #666;
+}
 .insd-stat b { color: #333; }
+
+/* ---------- 详情页：桌面端左图右文双栏（小红书网页版式，v42） ---------- */
+@media (min-width: 760px) {
+  .insd-app { max-width: 980px; }
+  .insd-nav { height: 48px; }
+  .insd-scroll { display: flex; align-items: stretch; padding-bottom: 64px; }
+  .insd-imgs {
+    flex: 0 0 50%; max-width: 50%; padding: 18px;
+    background: #fff; border-right: 1px solid var(--border-color, #eee);
+  }
+  .insd-img { max-height: 86vh; }
+  .insd-content {
+    flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center;
+    padding: 24px 8px;
+  }
+  .insd-author { background: transparent; border-radius: 0; margin-top: 0; padding: 0 28px 12px; }
+  .insd-text { background: transparent; border-radius: 0; padding: 8px 28px 18px; }
+  .insd-stats { background: transparent; padding: 14px 28px; }
+  .insd-bar { max-width: 980px; }
+}
 
 /* 底部固定操作栏 */
 .insd-bar {
