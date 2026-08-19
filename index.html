@@ -13,6 +13,7 @@
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/inspiration.css">
+  <link rel="stylesheet" href="css/checkin.css">
 </head>
 <body>
 
@@ -288,6 +289,13 @@
             <span class="hc-desc" id="almHomePreview">黄历 · 宜忌 · 方位</span>
           </span>
         </button>
+        <button class="home-card home-card-wide" onclick="App.switchModule('checkin')" aria-label="我的打卡">
+          <span class="hc-emoji">✅</span>
+          <span class="hc-body">
+            <span class="hc-title">我的打卡</span>
+            <span class="hc-desc">每日习惯 · 温柔记录</span>
+          </span>
+        </button>
       </div>
     </section>
 
@@ -402,6 +410,9 @@
       <div id="inspRoot"></div>
     </section>
 
+    <!-- 我的打卡模块（内嵌，由 js/checkin.js 渲染） -->
+    <section class="module module-checkin" id="checkinModule"></section>
+
   <!-- 今日金句弹窗 -->
   <div class="quote-modal-overlay" id="quoteModal" hidden>
     <div class="modal quote-modal-card">
@@ -466,6 +477,7 @@
   <script src="js/storage.js"></script>
   <script src="js/quotes.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/checkin.js"></script>
   <script src="js/inspiration-db.js"></script>
   <script src="js/inspiration.js"></script>
   <script>

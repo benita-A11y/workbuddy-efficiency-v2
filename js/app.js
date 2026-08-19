@@ -288,6 +288,7 @@ const App = (function () {
     else if (currentModule === 'profile') renderProfile();
     else if (currentModule === 'almanac') { if (window.Almanac) { try { Almanac.render(); } catch (e) {} } }
     else if (currentModule === 'auspicious') { if (window.Auspicious) { try { Auspicious.render(); } catch (e) {} } }
+    else if (currentModule === 'checkin') { if (window.Checkin) { try { Checkin.render(); } catch (e) { console.error('[checkin] 渲染失败', e); } } }
   }
 
   // ===== 待办模块 =====
@@ -1587,6 +1588,13 @@ const App = (function () {
             <div class="overview-card"><div class="label">已归档</div><div class="amount" style="color:var(--text-secondary);">${archivedCount}</div></div>
             <div class="overview-card"><div class="label">总记账笔数</div><div class="amount">${allBills.length}</div></div>
             <div class="overview-card expense"><div class="label">累计支出</div><div class="amount">¥${formatMoney(totalExpense)}</div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title"><span>✅ 我的打卡</span></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+            <span style="font-size:13px;color:var(--text-secondary);">记录每日小习惯，松弛又治愈</span>
+            <button class="btn btn-secondary" style="padding:6px 16px;font-size:13px;white-space:nowrap;" onclick="App.switchModule('checkin')">进入 ›</button>
           </div>
         </div>
         <div class="card" style="margin-bottom:16px;">

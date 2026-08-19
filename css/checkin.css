@@ -1,0 +1,159 @@
+/* ============================================================
+ * 我的打卡（习惯打卡）模块 —— 松弛治愈 · 淡莫兰迪 + 浅马卡龙
+ * 配色跟随平台主题（--theme-* 变量）；完成态极浅绿 #F0F7F2。
+ * 无红点、无角标、无未完成数字催促。
+ * ============================================================ */
+.module-checkin {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 14px 96px;
+  box-sizing: border-box;
+}
+
+/* 首页「我的打卡」宽卡：跨满整行作为高亮入口 */
+.home-card-wide { grid-column: 1 / -1; }
+
+/* 顶部导航 */
+.ci-nav {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 52px; padding: 0 2px;
+  background: var(--bg-page, #f5f5f7);
+  backdrop-filter: blur(8px);
+}
+.ci-back {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 22px; line-height: 1; color: var(--theme-primary, #B8C5D6);
+  padding: 6px 10px; border-radius: 10px;
+}
+.ci-back:active { background: rgba(0,0,0,.05); }
+.ci-title { font-size: 17px; font-weight: 700; color: var(--text-primary, #333); }
+.ci-manage {
+  border: none; background: transparent; cursor: pointer;
+  font-size: 22px; line-height: 1; color: var(--text-secondary, #999);
+  padding: 6px 12px; border-radius: 10px;
+}
+.ci-manage:active { background: rgba(0,0,0,.05); }
+
+/* 日期区 */
+.ci-date { padding: 6px 2px 14px; }
+.ci-date-main { font-size: 18px; font-weight: 700; color: var(--text-primary, #333); }
+.ci-date-sub { margin-top: 4px; font-size: 14px; color: var(--text-secondary, #9A9A9A); }
+
+/* 视图切换卡片 */
+.ci-views { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+.ci-view-card {
+  border: 1px solid var(--border-color, #eee); background: var(--bg-card, #fff);
+  border-radius: 16px; padding: 12px 8px; cursor: pointer; text-align: center;
+  display: flex; flex-direction: column; gap: 3px; font-family: inherit;
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.ci-view-card:active { transform: scale(.97); }
+.ci-view-card.active {
+  border-color: var(--theme-accent, #9EB0B0);
+  box-shadow: 0 6px 18px rgba(150, 170, 160, .18);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--theme-accent, #9EB0B0) 10%, var(--bg-card, #fff)), var(--bg-card, #fff));
+}
+.ci-view-label { font-size: 14px; font-weight: 700; color: var(--text-primary, #333); }
+.ci-view-period { font-size: 12px; color: var(--text-secondary, #9A9A9A); }
+.ci-view-count { font-size: 13px; font-weight: 600; color: var(--theme-accent, #9EB0B0); }
+
+/* 通用卡片 */
+.ci-card {
+  background: var(--bg-card, #fff);
+  border-radius: 16px; padding: 16px; margin-bottom: 14px;
+  box-shadow: var(--shadow-card, 0 2px 12px rgba(0,0,0,.06));
+}
+.ci-card-title { font-size: 15px; font-weight: 700; color: var(--text-primary, #333); margin-bottom: 12px; }
+.ci-card-sub { margin-top: 12px; font-size: 13px; color: var(--text-secondary, #9A9A9A); }
+
+/* 周趋势 */
+.ci-wk-row { display: flex; justify-content: space-between; gap: 4px; }
+.ci-wk { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ci-wk-dot { font-size: 20px; line-height: 1; color: var(--text-secondary, #c8c8c8); transition: transform .2s ease; }
+.ci-wk-dot.on { color: var(--theme-accent, #7FB069); transform: scale(1.15); }
+.ci-wk-wd { font-size: 12px; color: var(--text-secondary, #9A9A9A); }
+
+/* 月热力 */
+.ci-heat-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.ci-heat { aspect-ratio: 1 / 1; border-radius: 8px; background: var(--ci-heat-0, #F1F1F3); }
+.ci-heat.empty { background: transparent; }
+
+/* 年折线 */
+.ci-chart { width: 100%; height: 130px; display: block; margin-top: 4px; }
+.ci-poly { fill: none; stroke: var(--theme-accent, #7FB069); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+.ci-area { fill: color-mix(in srgb, var(--theme-accent, #7FB069) 16%, transparent); stroke: none; }
+.ci-dot { fill: var(--theme-accent, #7FB069); }
+.ci-mlbl { fill: var(--text-secondary, #9A9A9A); font-size: 9px; text-anchor: middle; }
+.ci-overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+.ci-ov { text-align: center; background: color-mix(in srgb, var(--theme-accent, #9EB0B0) 8%, var(--bg-page, #f5f5f7)); border-radius: 12px; padding: 10px 4px; }
+.ci-ov-num { font-size: 20px; font-weight: 800; color: var(--theme-accent, #6f8f74); }
+.ci-ov-lbl { font-size: 11px; color: var(--text-secondary, #9A9A9A); margin-top: 2px; }
+
+/* 今日打卡清单 */
+.ci-list { display: flex; flex-direction: column; gap: 8px; }
+.ci-item {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; border-radius: 12px; padding: 12px 16px;
+  cursor: pointer; border: 1px solid var(--border-color, #eee);
+  transition: background .25s ease, transform .12s ease, box-shadow .2s ease;
+  user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+}
+.ci-item:active { transform: scale(.99); }
+.ci-item.done { background: #F0F7F2; border-color: #DCEFE2; }
+.ci-item.done .ci-name { color: var(--text-secondary, #9A9A9A); text-decoration: line-through; }
+.ci-emoji { font-size: 22px; line-height: 1; flex: none; }
+.ci-name { flex: 1; font-size: 15px; color: var(--text-primary, #333); }
+.ci-state { font-size: 18px; flex: none; }
+.ci-item.done .ci-state { animation: ciPop .32s ease; }
+@keyframes ciPop { 0% { transform: scale(.4); opacity: .3; } 60% { transform: scale(1.25); } 100% { transform: scale(1); opacity: 1; } }
+
+.ci-handle { cursor: grab; color: var(--text-secondary, #bbb); font-size: 18px; flex: none; }
+.ci-item.sorting { cursor: grabbing; }
+.ci-item.dragging { opacity: .4; }
+.ci-item.dragover { box-shadow: 0 -2px 0 var(--theme-accent, #9EB0B0); }
+.ci-move { display: flex; flex-direction: column; gap: 2px; flex: none; }
+.ci-move button {
+  border: 1px solid var(--border-color, #eee); background: #fff; border-radius: 6px;
+  width: 26px; height: 20px; font-size: 12px; cursor: pointer; color: var(--text-secondary, #666);
+}
+.ci-item.removing { transform: translateX(-110%); opacity: 0; transition: transform .22s ease, opacity .22s ease; }
+
+.ci-add {
+  margin-top: 14px; width: 100%; padding: 13px;
+  border: 1.5px dashed var(--theme-accent, #9EB0B0); background: transparent;
+  border-radius: 12px; color: var(--theme-accent, #6f8f74);
+  font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+  transition: background .2s ease;
+}
+.ci-add:active { background: color-mix(in srgb, var(--theme-accent, #9EB0B0) 10%, transparent); }
+
+.ci-empty { text-align: center; color: var(--text-secondary, #9A9A9A); font-size: 14px; line-height: 1.8; padding: 18px 0; }
+
+/* 弹窗（新建/编辑/操作菜单） */
+.ci-modal-title { font-size: 17px; font-weight: 700; color: var(--text-primary, #333); margin-bottom: 16px; }
+.ci-input {
+  width: 100%; box-sizing: border-box; padding: 12px 14px; font-size: 15px;
+  border: 1px solid var(--border-color, #eee); border-radius: 12px;
+  background: var(--bg-page, #f5f5f7); color: var(--text-primary, #333); font-family: inherit;
+  outline: none;
+}
+.ci-input:focus { border-color: var(--theme-accent, #9EB0B0); }
+.ci-emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin: 14px 0 18px; }
+.ci-emoji-opt {
+  border: 1px solid var(--border-color, #eee); background: var(--bg-page, #f5f5f7);
+  border-radius: 10px; font-size: 20px; padding: 7px 0; cursor: pointer; line-height: 1;
+}
+.ci-emoji-opt.sel { border-color: var(--theme-accent, #9EB0B0); background: color-mix(in srgb, var(--theme-accent, #9EB0B0) 14%, #fff); }
+.ci-modal-actions { display: flex; gap: 10px; }
+.ci-modal-actions .btn { flex: 1; }
+
+.ci-act-title { font-size: 16px; font-weight: 700; color: var(--text-primary, #333); margin-bottom: 14px; }
+.ci-act-btn {
+  display: block; width: 100%; padding: 13px; margin-bottom: 8px;
+  border: none; border-radius: 12px; background: var(--bg-page, #f5f5f7);
+  color: var(--text-primary, #333); font-size: 15px; cursor: pointer; font-family: inherit;
+}
+.ci-act-btn:active { background: rgba(0,0,0,.05); }
+.ci-act-btn.danger { color: #C98A8A; }
+.ci-act-btn.cancel { color: var(--text-secondary, #999); margin-bottom: 0; }

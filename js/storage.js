@@ -18,6 +18,8 @@ const Store = (function () {
     reviewMemos: {},
     // ===== 补品打卡 =====
     supplements: [], // {id,name,effects,bestTime,frequency,color,reminderEnabled,reminderTime,reminderReason,source,checkins:{日期:[时间戳...]}}
+    // ===== 习惯打卡（我的打卡）=====
+    checkins: [],   // {id,name,icon,order,createdAt,records:{日期:1}} 每日勾选即记 1
     // ===== 每日阅读 =====
     reading: {
       records: [],   // {id,date,minutes,book,medium,goalMinutes,endedAt}
@@ -125,7 +127,7 @@ const Store = (function () {
     }
     // 数据自检：确保数组/对象字段存在（旧版本或损坏数据可能把数组写成 null，
     // 导致后续 .forEach 崩溃、Store 初始化失败、整页起不来）
-    ['tasks', 'weeklyGoals', 'bills', 'inspirations', 'milestones', 'focusSessions', 'supplements'].forEach(function (k) {
+    ['tasks', 'weeklyGoals', 'bills', 'inspirations', 'milestones', 'focusSessions', 'supplements', 'checkins'].forEach(function (k) {
       if (!Array.isArray(data[k])) data[k] = [];
     });
     if (!data.settings || typeof data.settings !== 'object') data.settings = {};
@@ -874,6 +876,79 @@ const Store = (function () {
     },
   };
 
+  // ===== 习惯打卡（我的打卡）=====
+  const Checkins = {
+    getAll() { return data.checkins.slice().sort(function (a, b) { return (a.order || 0) - (b.order || 0); }); },
+    getById(id) { return data.checkins.find(function (c) { return c.id === id; }); },
+    create(d) {
+      const maxOrder = data.checkins.reduce(function (m, c) { return Math.max(m, c.order || 0); }, 0);
+      const item = { id: uuid(), name: d.name, icon: d.icon || '✅', order: maxOrder + 1, createdAt: Date.now(), records: {} };
+      data.checkins.push(item); save(); return item;
+    },
+    update(id, d) {
+      const it = this.getById(id); if (!it) return null;
+      if (d.name != null) it.name = d.name;
+      if (d.icon != null) it.icon = d.icon;
+      save(); return it;
+    },
+    remove(id) {
+      const i = data.checkins.findIndex(function (c) { return c.id === id; });
+      if (i >= 0) { data.checkins.splice(i, 1); save(); }
+    },
+    toggle(id, dateStr) {
+      const it = this.getById(id); if (!it) return;
+      if (!it.records) it.records = {};
+      if (it.records[dateStr]) delete it.records[dateStr]; else it.records[dateStr] = 1;
+      save();
+    },
+    isDone(id, dateStr) { const it = this.getById(id); return !!(it && it.records && it.records[dateStr]); },
+    reorder(ids) { ids.forEach(function (id, idx) { const it = Checkins.getById(id); if (it) it.order = idx; }); save(); },
+    todayDone(dateStr) { return data.checkins.filter(function (c) { return c.records && c.records[dateStr]; }).length; },
+    countInRange(s, e) {
+      let n = 0;
+      data.checkins.forEach(function (c) { if (c.records) Object.keys(c.records).forEach(function (d) { if (d >= s && d <= e) n++; }); });
+      return n;
+    },
+    weekActiveDays(dateStr) {
+      const dates = DateUtils.getWeekDates(new Date(dateStr));
+      let active = 0;
+      dates.forEach(function (dt) { const ds = DateUtils.formatDate(dt); if (data.checkins.some(function (c) { return c.records && c.records[ds]; })) active++; });
+      return { active: active, total: 7 };
+    },
+    monthHeat(year, month) {
+      const days = DateUtils.getMonthDays(year, month);
+      const map = {};
+      for (let i = 1; i <= days; i++) {
+        const ds = year + '-' + String(month + 1).padStart(2, '0') + '-' + String(i).padStart(2, '0');
+        map[i] = data.checkins.filter(function (c) { return c.records && c.records[ds]; }).length;
+      }
+      return map;
+    },
+    yearTrend(year) {
+      const out = [];
+      for (let m = 0; m < 12; m++) {
+        const s = year + '-' + String(m + 1).padStart(2, '0') + '-01';
+        const e = year + '-' + String(m + 1).padStart(2, '0') + '-31';
+        out.push(this.countInRange(s, e));
+      }
+      return out;
+    },
+    yearOverview(year) {
+      const s = year + '-01-01', e = year + '-12-31';
+      const dates = new Set(); let total = 0;
+      data.checkins.forEach(function (c) { if (c.records) Object.keys(c.records).forEach(function (d) { if (d >= s && d <= e) { total++; dates.add(d); } }); });
+      const arr = Array.from(dates).sort();
+      let longest = 0, cur = 0, prev = null;
+      arr.forEach(function (d) {
+        if (prev) { const diff = Math.round((new Date(d) - new Date(prev)) / 86400000); cur = (diff === 1) ? cur + 1 : 1; }
+        else cur = 1;
+        if (cur > longest) longest = cur;
+        prev = d;
+      });
+      return { total: total, activeDays: dates.size, longest: longest };
+    },
+  };
+
   // ===== 健康生活 =====
   const Health = {
     // ---------- 命名自定义 ----------
@@ -1196,6 +1271,7 @@ const Store = (function () {
     if (imported.milestones) data.milestones = mergeArray(data.milestones, imported.milestones);
     if (imported.focusSessions) data.focusSessions = mergeArray(data.focusSessions, imported.focusSessions);
     if (imported.supplements) data.supplements = mergeArray(data.supplements, imported.supplements);
+    if (imported.checkins) data.checkins = mergeArray(data.checkins, imported.checkins);
     if (imported.reading) {
       data.reading = data.reading || { records: [], books: [], quotes: [], favorites: [], streak: {}, lastReminded: {} };
       data.reading.records = mergeArray(data.reading.records, imported.reading.records);
@@ -1372,6 +1448,15 @@ const Store = (function () {
       createdAt: Date.now() - 7200000,
     });
 
+    // 打卡习惯（默认示例，呈现松弛的每日记录）
+    const ciIcons = ['🍳', '💧', '🏃', '🌙'];
+    const ciNames = ['自己做饭', '喝水六杯', '运动', '12点前睡觉'];
+    ciNames.forEach(function (nm, i) {
+      data.checkins.push({ id: uuid(), name: nm, icon: ciIcons[i], order: i, createdAt: Date.now(), records: {} });
+    });
+    // 今日先勾掉前 3 项，呈现「今日已完成 3 项」的起始状态
+    data.checkins.slice(0, 3).forEach(function (c) { c.records[today] = 1; });
+
     // 便利贴
     data.stickyNotes = '记得周五前提交报销单\n下周二有产品评审会\n考虑换一个更好用的笔记工具';
 
@@ -1392,6 +1477,7 @@ const Store = (function () {
     Milestones,
     FocusSessions,
     Supplements,
+    Checkins,
     Reading,
     Health,
     ReviewMemos,

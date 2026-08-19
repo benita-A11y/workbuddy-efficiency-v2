@@ -1,5 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v47：灵感性能再压榨 —— 列表缩略图读取合并为单次事务(getAllThumbs)、缺图生成限并发3个避免主线程冻结、卡片加 content-visibility:auto 跳过离屏渲染；详情页无缩略图时即时生成缩略图秒显再升级原图。继承 v46/v45/v41 与 v35/v36 network-first。）
-const CACHE_NAME = 'efficiency-app-v47';
+// Service Worker - 离线优先但导航走网络优先（v48：新增「我的打卡」习惯打卡模块 —— 首页宽卡 + 我的页面入口；周/月/年视图(趋势圆点/热力图/折线)、点击勾选当日完成(浅绿✅/长按编辑删除/⋮排序拖拽)、Store.Checkins 数据层；配色松弛治愈莫兰迪、无红点无催促；继承 v47/v41 与 v35/v36 network-first。）
+const CACHE_NAME = 'efficiency-app-v48';
 const ASSETS = [
   './',
   './index.html',
