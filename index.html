@@ -218,9 +218,56 @@
         </button>
       </div>
 
-      <!-- 功能卡片网格：消费小记 / 待办 / 健康追踪 / 补品 / 阅读 / 今日宜忌（2 列，6 张卡片完整铺满） -->
+      <!-- 功能卡片网格：按使用频率重排（我的打卡 → 今日健康 → 阅读 → 消费 → 补品 → 宜忌） -->
       <div class="home-grid-2x2">
-        <!-- 卡片1：消费小记（点击跳转记账模块） -->
+        <!-- 卡片1：我的打卡（宽卡置顶，每天第一件仪式感） -->
+        <button class="home-card home-card-wide" onclick="App.switchModule('checkin')" aria-label="我的打卡">
+          <span class="hc-emoji">✅</span>
+          <span class="hc-body">
+            <span class="hc-title">我的打卡</span>
+            <span class="hc-desc">每日习惯 · 温柔记录</span>
+          </span>
+        </button>
+
+        <!-- 卡片2：今日健康（方案D：大号卡片 + 标题栏统计入口 + 三块明细） -->
+        <button class="home-card home-card-health home-card-wide" onclick="App.switchModule('health')" aria-label="今日健康">
+          <span class="hc-head">
+            <span class="hc-emoji">🛌</span>
+            <span class="hc-title">今日健康</span>
+            <span class="hc-stat" role="button" tabindex="0" onclick="event.stopPropagation();App.switchModule('health')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.switchModule('health')}">📊 统计 →</span>
+          </span>
+          <span class="health-sub-areas">
+            <span class="hs-area hs-sleep" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('sleep')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('sleep')}">
+              <span class="hs-emoji">😴</span>
+              <span class="hs-val" id="hsSleep">—</span>
+              <span class="hs-detail" id="hsSleepDetail">—</span>
+              <span class="hs-insight" id="hsSleepInsight">💡</span>
+            </span>
+            <span class="hs-area hs-period" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('period')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('period')}">
+              <span class="hs-emoji">🩸</span>
+              <span class="hs-val" id="hsPeriod">—</span>
+              <span class="hs-detail" id="hsPeriodDetail">—</span>
+              <span class="hs-insight" id="hsPeriodInsight">💡</span>
+            </span>
+            <span class="hs-area hs-bowel" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('bowel')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('bowel')}">
+              <span class="hs-emoji">💩</span>
+              <span class="hs-val" id="hsBowel">—</span>
+              <span class="hs-detail" id="hsBowelDetail">—</span>
+              <span class="hs-insight" id="hsBowelInsight">💡</span>
+            </span>
+          </span>
+        </button>
+
+        <!-- 卡片3：今日阅读 -->
+        <button class="home-card" onclick="App.switchModule('reading')" aria-label="阅读记录">
+          <span class="hc-emoji">📚</span>
+          <span class="hc-body">
+            <span class="hc-title">今日阅读</span>
+            <span class="hc-desc">计时 · 笔记 · 统计</span>
+          </span>
+        </button>
+
+        <!-- 卡片4：消费小记 -->
         <button class="home-card" onclick="App.switchModule('finance')" aria-label="消费小记">
           <span class="hc-emoji">💰</span>
           <span class="hc-body">
@@ -229,55 +276,12 @@
           </span>
         </button>
 
-        <!-- 卡片2：待办（点击跳转待办模块） -->
-        <button class="home-card" onclick="App.switchModule('todo')" aria-label="待办">
-          <span class="hc-emoji">📋</span>
-          <span class="hc-body">
-            <span class="hc-title">待办</span>
-            <span class="hc-desc">任务清单 · 完成打卡</span>
-          </span>
-        </button>
-
-        <!-- 卡片3：健康追踪（睡眠 / 经期 / 噗噗 三合一融合） -->
-        <button class="home-card home-card-health" onclick="App.switchModule('health')" aria-label="健康追踪">
-          <span class="hc-head">
-            <span class="hc-emoji">🩺</span>
-            <span class="hc-title">健康追踪</span>
-          </span>
-          <span class="health-sub-areas">
-            <span class="hs-area hs-sleep" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('sleep')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('sleep')}">
-              <span class="hs-emoji">🛌</span>
-              <span class="hs-val" id="hsSleep">—</span>
-              <span class="hs-label">睡眠</span>
-            </span>
-            <span class="hs-area hs-period" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('period')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('period')}">
-              <span class="hs-emoji">🩸</span>
-              <span class="hs-val" id="hsPeriod">—</span>
-              <span class="hs-label">经期</span>
-            </span>
-            <span class="hs-area hs-bowel" role="button" tabindex="0" onclick="event.stopPropagation();App.openHealth('bowel')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();event.stopPropagation();App.openHealth('bowel')}">
-              <span class="hs-emoji">💩</span>
-              <span class="hs-val" id="hsBowel">—</span>
-              <span class="hs-label">噗噗</span>
-            </span>
-          </span>
-        </button>
-
-        <!-- 卡片4：补品记录 -->
+        <!-- 卡片5：补品记录 -->
         <button class="home-card" onclick="App.switchModule('supplement')" aria-label="补品记录">
           <span class="hc-emoji">💊</span>
           <span class="hc-body">
             <span class="hc-title">补品记录</span>
             <span class="hc-desc">服用打卡 · 查询提醒</span>
-          </span>
-        </button>
-
-        <!-- 卡片5：阅读记录 -->
-        <button class="home-card" onclick="App.switchModule('reading')" aria-label="阅读记录">
-          <span class="hc-emoji">📚</span>
-          <span class="hc-body">
-            <span class="hc-title">阅读记录</span>
-            <span class="hc-desc">计时 · 笔记 · 统计</span>
           </span>
         </button>
 
@@ -287,13 +291,6 @@
           <span class="hc-body">
             <span class="hc-title">今日宜忌</span>
             <span class="hc-desc" id="almHomePreview">黄历 · 宜忌 · 方位</span>
-          </span>
-        </button>
-        <button class="home-card home-card-wide" onclick="App.switchModule('checkin')" aria-label="我的打卡">
-          <span class="hc-emoji">✅</span>
-          <span class="hc-body">
-            <span class="hc-title">我的打卡</span>
-            <span class="hc-desc">每日习惯 · 温柔记录</span>
           </span>
         </button>
       </div>

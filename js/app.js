@@ -228,15 +228,64 @@ const App = (function () {
   }
   function updateHomeHealth() {
     const t = Store.DateUtils.formatDate(new Date());
+    const fmtHM = (ts) => { const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+
+    // —— 睡眠：数值 + 起止时间明细 + 简短提示 ——
     const s = document.getElementById('hsSleep');
-    if (s) { const m = Store.Health.getSleepMinutes(t); s.textContent = (m != null && m > 0) ? (m / 60).toFixed(1) + 'h' : '—'; }
-    const p = document.getElementById('hsPeriod');
-    if (p) {
-      if (Store.Health.isPeriodDay(t)) p.textContent = '经期中';
-      else { const pr = Store.Health.predict(); p.textContent = (pr && pr.daysUntilNext != null) ? '还有' + pr.daysUntilNext + '天' : '—'; }
+    const sd = document.getElementById('hsSleepDetail');
+    const si = document.getElementById('hsSleepInsight');
+    const sleepRec = Store.Health.getSleepRecord(t);
+    const sleepMin = Store.Health.getSleepMinutes(t);
+    if (s) {
+      if (sleepMin != null && sleepMin > 0) {
+        const h = sleepMin / 60;
+        s.textContent = h.toFixed(1) + 'h';
+        if (sd) sd.textContent = (sleepRec && sleepRec.asleep && sleepRec.awake) ? (fmtHM(sleepRec.asleep) + '-' + fmtHM(sleepRec.awake)) : '—';
+        if (si) si.textContent = (h >= 7 && h <= 9) ? '💡 睡得不错' : (h < 7 ? '💡 早点休息' : '💡 适度运动');
+      } else {
+        s.textContent = '—'; if (sd) sd.textContent = '—'; if (si) si.textContent = '💡 记录睡眠';
+      }
     }
+
+    // —— 经期：第N天/还有N天 + 预计来期明细 + 提示 ——
+    const p = document.getElementById('hsPeriod');
+    const pd = document.getElementById('hsPeriodDetail');
+    const pi = document.getElementById('hsPeriodInsight');
+    if (p) {
+      const pr = Store.Health.predict();
+      const nextLabel = pr ? ('预计' + pr.nextStart.slice(5).replace('-', '/') + '来') : '—';
+      if (Store.Health.isPeriodDay(t)) {
+        let n = 0; const d = new Date(t + 'T00:00:00');
+        while (Store.Health.isPeriodDay(Store.DateUtils.formatDate(d)) && n < 45) { n++; d.setDate(d.getDate() - 1); }
+        p.textContent = '第' + n + '天';
+        if (pd) pd.textContent = nextLabel;
+        if (pi) pi.textContent = '💡 注意休息';
+      } else if (pr && pr.daysUntilNext != null) {
+        p.textContent = '还有' + pr.daysUntilNext + '天';
+        if (pd) pd.textContent = nextLabel;
+        if (pi) pi.textContent = '💡 规律记录';
+      } else {
+        p.textContent = '—'; if (pd) pd.textContent = '—'; if (pi) pi.textContent = '💡 记录经期';
+      }
+    }
+
+    // —— 噗噗：完成状态 + 首次时间明细 + 提示 ——
     const b = document.getElementById('hsBowel');
-    if (b) { const c = Store.Health.getTodayBowelCount(); b.textContent = c > 0 ? '✅ 已记录' : '—'; }
+    const bd = document.getElementById('hsBowelDetail');
+    const bi = document.getElementById('hsBowelInsight');
+    if (b) {
+      const bwArr = (Store.Health.getBowel().days && Store.Health.getBowel().days[t]) || [];
+      const cnt = bwArr.length || 0;
+      if (cnt > 0) {
+        b.textContent = '✅ 已完成';
+        if (bd) bd.textContent = fmtHM(bwArr[0]);
+        if (bi) bi.textContent = '💡 很规律';
+      } else {
+        b.textContent = '未记录';
+        if (bd) bd.textContent = '—';
+        if (bi) bi.textContent = '💡 多喝水';
+      }
+    }
   }
 
   // ===== 跨天检测（全局日期统一数据源 currentDate）=====

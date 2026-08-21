@@ -1,5 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v48：新增「我的打卡」习惯打卡模块 —— 首页宽卡 + 我的页面入口；周/月/年视图(趋势圆点/热力图/折线)、点击勾选当日完成(浅绿✅/长按编辑删除/⋮排序拖拽)、Store.Checkins 数据层；配色松弛治愈莫兰迪、无红点无催促；继承 v47/v41 与 v35/v36 network-first。）
-const CACHE_NAME = 'efficiency-app-v48';
+// Service Worker - 离线优先但导航走网络优先（v49：首页模块重排（我的打卡→今日健康→阅读→消费→补品→宜忌，移除待办）+ 健康追踪升级为方案D大号卡片（标题栏「统计」入口 + 睡眠/经期/噗噗三块各带明细行与提示行）；继承 v48 与 v35/v36 network-first。）
+const CACHE_NAME = 'efficiency-app-v49';
 const ASSETS = [
   './',
   './index.html',
