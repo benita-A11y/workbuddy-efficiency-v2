@@ -1,5 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v49：首页模块重排（我的打卡→今日健康→阅读→消费→补品→宜忌，移除待办）+ 健康追踪升级为方案D大号卡片（标题栏「统计」入口 + 睡眠/经期/噗噗三块各带明细行与提示行）；继承 v48 与 v35/v36 network-first。）
-const CACHE_NAME = 'efficiency-app-v49';
+// Service Worker - 离线优先但导航走网络优先（v50：首页底部新增「待办」独立宽卡模块（与「我的打卡」同款，避免网格半格空缺）+ updateHomeTodo 预览今日待办数；继承 v49/v48 与 v35/v36 network-first。）
+const CACHE_NAME = 'efficiency-app-v50';
 const ASSETS = [
   './',
   './index.html',

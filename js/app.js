@@ -202,7 +202,7 @@ const App = (function () {
 
     Store.Tasks.autoArchive();
     render();
-    if (module === 'home') { updateHomeGreeting(); updateHomeHealth(); }
+    if (module === 'home') { updateHomeGreeting(); updateHomeHealth(); updateHomeTodo(); }
     // 从灵感详情返回瀑布流时，恢复之前的滚动位置（参考小红书）
     if (module === 'inspiration' && window.InspirationScroll) window.InspirationScroll.restore();
   }
@@ -285,6 +285,21 @@ const App = (function () {
         if (bd) bd.textContent = '—';
         if (bi) bi.textContent = '💡 多喝水';
       }
+    }
+  }
+
+  // ===== 首页待办预览（底部独立模块，温柔展示今日待办数，不催促）=====
+  function updateHomeTodo() {
+    const el = document.getElementById('homeTodoDesc');
+    if (!el) return;
+    try {
+      const list = Store.Tasks.getByDate(new Date());
+      const total = list.length;
+      if (total === 0) { el.textContent = '暂无待办 · 享受当下'; return; }
+      const done = list.filter(t => t.completed).length;
+      el.textContent = '今日 ' + total + ' 项 · 已完成 ' + done;
+    } catch (e) {
+      el.textContent = '任务清单 · 完成打卡';
     }
   }
 

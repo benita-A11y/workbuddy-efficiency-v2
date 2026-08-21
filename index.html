@@ -218,7 +218,7 @@
         </button>
       </div>
 
-      <!-- 功能卡片网格：按使用频率重排（我的打卡 → 今日健康 → 阅读 → 消费 → 补品 → 宜忌） -->
+      <!-- 功能卡片网格：按使用频率重排（我的打卡 → 今日健康 → 阅读 → 消费 → 补品 → 宜忌 → 待办） -->
       <div class="home-grid-2x2">
         <!-- 卡片1：我的打卡（宽卡置顶，每天第一件仪式感） -->
         <button class="home-card home-card-wide" onclick="App.switchModule('checkin')" aria-label="我的打卡">
@@ -291,6 +291,15 @@
           <span class="hc-body">
             <span class="hc-title">今日宜忌</span>
             <span class="hc-desc" id="almHomePreview">黄历 · 宜忌 · 方位</span>
+          </span>
+        </button>
+
+        <!-- 卡片7：待办（首页底部独立模块 · 宽卡与「我的打卡」同款，避免 2 列网格半格空缺；预览今日待办数） -->
+        <button class="home-card home-card-wide" onclick="App.switchModule('todo')" aria-label="待办">
+          <span class="hc-emoji">📋</span>
+          <span class="hc-body">
+            <span class="hc-title">待办</span>
+            <span class="hc-desc" id="homeTodoDesc">任务清单 · 完成打卡</span>
           </span>
         </button>
       </div>
