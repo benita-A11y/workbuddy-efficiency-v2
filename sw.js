@@ -1,5 +1,5 @@
-// Service Worker - 离线优先但导航走网络优先（v50：首页底部新增「待办」独立宽卡模块（与「我的打卡」同款，避免网格半格空缺）+ updateHomeTodo 预览今日待办数；继承 v49/v48 与 v35/v36 network-first。）
-const CACHE_NAME = 'efficiency-app-v50';
+// Service Worker - 缓存优先 +后台静默更新（SWR），进 app 秒开（v51：将原 network-first 改为 stale-while-revalidate，根治“每次打开都慢”；部署新版本仍靠 CACHE_NAME 自增 + skipWaiting + clients.claim 自动接管，配合 index.html 的 controllerchange 自动刷新应用最新版；继承 v50/v49/v48。）
+const CACHE_NAME = 'efficiency-app-v51';
 const ASSETS = [
   './',
   './index.html',
@@ -10,6 +10,7 @@ const ASSETS = [
   './css/inspiration.css',
   './js/storage.js',
   './js/app.js',
+  './js/checkin.js',
   './js/quotes.js',
   './js/inspiration-db.js',
   './js/inspiration.js',
@@ -49,34 +50,26 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // 导航请求（HTML 页面）：NETWORK-FIRST —— 永远先拿最新页面，失败再退回缓存
-  if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request)
+  // Stale-While-Revalidate：命中缓存立即返回（秒开），同时后台拉取最新写回缓存
+  event.respondWith(
+    caches.open(CACHE_NAME).then((cache) => {
+      const cached = cache.match(event.request);
+      const fetched = fetch(event.request)
         .then((response) => {
-          if (response && response.status === 200) {
-            const clone = response.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+          // 仅缓存同源成功响应，避免污染缓存
+          if (response && response.status === 200 && (response.type === 'basic' || response.type === 'default')) {
+            cache.put(event.request, response.clone());
           }
           return response;
         })
-        .catch(() => caches.match(event.request).then(c => c || caches.match('./index.html')))
-    );
-    return;
-  }
-
-  // 其它静态资源（css/js/数据/图标）：NETWORK-FIRST + 绕过 HTTP 缓存
-  // 保证用户每次刷新都拿到服务器最新文件（彻底解决“改了样式刷新看不到”的缓存问题）；
-  // 仅当网络不可用时才退回缓存，保证离线可用。
-  event.respondWith(
-    fetch(event.request, { cache: 'reload' })
-      .then((response) => {
-        if (response && response.status === 200 && response.type === 'basic') {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./index.html')))
+        .catch(() => null);
+      return cached.then((c) => {
+        if (c) return c; // 命中：立即返回，fetched 仍在后台更新缓存
+        // 未命中：等网络；失败则回退首页
+        return fetched.then((resp) =>
+          resp || cache.match('./index.html').then((f) => f || cache.match('./'))
+        );
+      });
+    })
   );
 });
