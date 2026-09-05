@@ -202,7 +202,7 @@ const App = (function () {
 
     Store.Tasks.autoArchive();
     render();
-    if (module === 'home') { updateHomeGreeting(); updateHomeHealth(); updateHomeTodo(); }
+    if (module === 'home') { updateHomeGreeting(); updateHomeHealth(); updateHomeTodo(); updateHomeReading(); }
     // 从灵感详情返回瀑布流时，恢复之前的滚动位置（参考小红书）
     if (module === 'inspiration' && window.InspirationScroll) window.InspirationScroll.restore();
   }
@@ -300,6 +300,26 @@ const App = (function () {
       el.textContent = '今日 ' + total + ' 项 · 已完成 ' + done;
     } catch (e) {
       el.textContent = '任务清单 · 完成打卡';
+    }
+  }
+
+  // 首页「阅读」卡实时联动：今日阅读分钟数 + 当前在读书名（数据来自 Store.Reading，与主模块同源）
+  function updateHomeReading() {
+    const el = document.getElementById('homeReadingDesc');
+    if (!el) return;
+    try {
+      const r = Store.Reading.get();
+      const today = Store.DateUtils.formatDate(new Date());
+      const todayMin = (r.records || [])
+        .filter(x => x.date === today && (x.minutes || 0) >= 1)
+        .reduce((s, x) => s + (x.minutes || 0), 0);
+      const cur = (r.books || []).find(b => b.status === 'reading');
+      if (todayMin > 0 && cur) el.textContent = '今日 ' + todayMin + ' 分钟 · 《' + cur.name + '》';
+      else if (todayMin > 0) el.textContent = '今日已读 ' + todayMin + ' 分钟 ✨';
+      else if (cur) el.textContent = '在读《' + cur.name + '》· 今天还没读哦';
+      else el.textContent = '今日还没读 · 翻开一本书吧 📖';
+    } catch (e) {
+      el.textContent = '计时 · 笔记 · 统计';
     }
   }
 

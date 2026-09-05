@@ -1,19 +1,25 @@
-// Service Worker - 缓存优先 +后台静默更新（SWR），进 app 秒开（v51：将原 network-first 改为 stale-while-revalidate，根治“每次打开都慢”；部署新版本仍靠 CACHE_NAME 自增 + skipWaiting + clients.claim 自动接管，配合 index.html 的 controllerchange 自动刷新应用最新版；继承 v50/v49/v48。）
-const CACHE_NAME = 'efficiency-app-v51';
+// Service Worker - 缓存优先 +后台静默更新（SWR），进 app 秒开（v52：补全独立页预缓存 finance.html/css/finance.css/js/finance.js/js/theme-apply.js/js/inspiration-detail.js/js/inspiration-edit.js，确保首次离线也能打开所有页面；并配套 quotes.js 改纯本地消除第三方请求；继承 v51 SWR + v50/v49/v48。）
+const CACHE_NAME = 'efficiency-app-v52';
 const ASSETS = [
   './',
   './index.html',
   './inspiration.html',
   './inspiration-detail.html',
   './inspiration-edit.html',
+  './finance.html',
   './css/style.css',
   './css/inspiration.css',
+  './css/finance.css',
   './js/storage.js',
   './js/app.js',
   './js/checkin.js',
   './js/quotes.js',
+  './js/theme-apply.js',
   './js/inspiration-db.js',
   './js/inspiration.js',
+  './js/inspiration-detail.js',
+  './js/inspiration-edit.js',
+  './js/finance.js',
   './js/almanac.js',
   './js/auspicious.js',
   './almanac-data.js',

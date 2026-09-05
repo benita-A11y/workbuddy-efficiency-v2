@@ -217,29 +217,16 @@
     const d = new Date();
     return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
   }
-  // 免Key、CORS 友好的英文语录 API（Quotable）。如需改用 QuoteVerse，替换地址并加 x-rapidapi-key 头。
-  async function fetchRemote() {
-    try {
-      const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 4000);
-      const r = await fetch('https://api.quotable.io/random?tags=inspirational,wisdom&maxLength=120', { cache: 'no-store', signal: ctrl.signal });
-      clearTimeout(timer);
-      if (!r.ok) return null;
-      const d = await r.json();
-      if (!d || !d.content) return null;
-      return { id: 'api-' + hash(d.content), en: d.content, zh: null, author: d.author || '佚名', source: 'Quotable', remote: true };
-    } catch (e) { return null; }
-  }
+  // 纯本地双语库（145 条精选）：离线可用、无第三方请求、隐私安全。
+  // 说明：旧版有 25% 概率调用 api.quotable.io 拉取新鲜英文句，但会带来隐私泄露（每次打开约 1/4 概率向第三方发请求）、
+  // 离线时的无意义网络尝试、以及第三方服务不稳导致的不确定性。本地库已足够丰富，故改为 100% 本地。
   async function getDailyQuote(force) {
     const key = todayKey();
     const date = localStorage.getItem(LS_DATE);
     if (!force && date === key) {
       try { const c = JSON.parse(localStorage.getItem(LS_TODAY) || 'null'); if (c) return c; } catch (e) {}
     }
-    // 25% 概率尝试远程新鲜英文句，其余走本地双语库（保证英文+中文翻译稳定展示）
-    let q = null;
-    if (!force && Math.random() < 0.25) q = await fetchRemote();
-    if (!q) q = pickLocal();
+    const q = pickLocal();
     markShown(q);
     try { localStorage.setItem(LS_TODAY, JSON.stringify(q)); localStorage.setItem(LS_DATE, key); } catch (e) {}
     return q;

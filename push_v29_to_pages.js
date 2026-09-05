@@ -97,7 +97,7 @@ function req(method, urlPath, body) {
 
   // 4. 创建 commit
   const commit = await req('POST', `/repos/${OWNER}/${REPO}/git/commits`, {
-    message: 'deploy v51: SW 缓存策略由 network-first 改为 stale-while-revalidate（缓存优先+后台静默更新），根治“每次打开都慢”；precache 补 js/checkin.js；部署仍靠 CACHE_NAME 自增 + controllerchange 自动刷新生效',
+    message: 'deploy v52: 安全与离线审计修复——quotes.js 改纯本地(移除 quotable.io 第三方请求,隐私+离线纯净+可靠); SW 补全独立页预缓存(finance/inspiration详情编辑页)确保首次离线可用; 首页阅读卡实时联动 Store.Reading 今日分钟+在读书名; 仍 SWR + CACHE_NAME 自增生效',
     tree: tree.sha,
     parents: parentSha ? [parentSha] : []
   });
