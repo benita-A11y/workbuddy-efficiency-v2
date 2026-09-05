@@ -1,5 +1,5 @@
-// Service Worker - 缓存优先 +后台静默更新（SWR），进 app 秒开（v52：补全独立页预缓存 finance.html/css/finance.css/js/finance.js/js/theme-apply.js/js/inspiration-detail.js/js/inspiration-edit.js，确保首次离线也能打开所有页面；并配套 quotes.js 改纯本地消除第三方请求；继承 v51 SWR + v50/v49/v48。）
-const CACHE_NAME = 'efficiency-app-v52';
+// Service Worker - 缓存优先 +后台静默更新（SWR），进 app 秒开（v53：quotes.js 注释层面的第三方域名引用全部清除，文件 100% 本地无网络；继承 v52 独立页预缓存 + v51 SWR + v50/v49/v48。）
+const CACHE_NAME = 'efficiency-app-v53';
 const ASSETS = [
   './',
   './index.html',

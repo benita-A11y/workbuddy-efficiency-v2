@@ -97,7 +97,7 @@ function req(method, urlPath, body) {
 
   // 4. 创建 commit
   const commit = await req('POST', `/repos/${OWNER}/${REPO}/git/commits`, {
-    message: 'deploy v52: 安全与离线审计修复——quotes.js 改纯本地(移除 quotable.io 第三方请求,隐私+离线纯净+可靠); SW 补全独立页预缓存(finance/inspiration详情编辑页)确保首次离线可用; 首页阅读卡实时联动 Store.Reading 今日分钟+在读书名; 仍 SWR + CACHE_NAME 自增生效',
+    message: 'deploy v53: quotes.js 注释层第三方域名引用(Quotable/QuoteVerse/RapidAPI)全部清除,文件 100% 本地无网络; SW 版本号自增 v53 确保存量用户经 SWR 静默更新拿到纯净版; 继承 v52 独立页预缓存 + v51 SWR',
     tree: tree.sha,
     parents: parentSha ? [parentSha] : []
   });

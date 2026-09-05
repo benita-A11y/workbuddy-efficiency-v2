@@ -1,17 +1,13 @@
-/* 每日金句 —— 本地精选双语库 + 去重 + 开放API兜底 + 收藏
+/* 每日金句 —— 本地精选双语库 + 去重 + 收藏（纯本地，无网络请求）
  * 顶部「每日激励语」与金句弹窗共用同一数据源。
  *
  * 数据模型（双语）：
  *   { id, zh, author, source }                  中文金句（zh 为中文正文）
  *   { id, en, zh, author, source }              英文金句（en 为英文正文，zh 为其预置中文翻译）
  *
- * 数据来源（按优先级）：
- *   1) 本地双语库（兜底，离线可用，含已读去重）—— 主力，保证「英文句 + 中文翻译」始终可展示
- *   2) 免Key开放语录API（Quotable，CORS 友好，英文）—— 偶尔注入新鲜英文句
- *      ⚠️ 用户原稿写的是 QuoteVerse API，但 QuoteVerse（dakidarts）需 RapidAPI Key，
- *         并非「免Key免注册」。故默认用同样免Key且支持 CORS 的 Quotable；
- *         如已自备 QuoteVerse Key，把 fetchRemote 里的地址换成
- *         https://quoteverse.p.rapidapi.com/<theme> 并加上 x-rapidapi-key 头即可。
+ * 数据来源：仅本地双语库（离线可用、隐私安全、含已读去重）。
+ *   —— 已移除旧版对第三方语录 API（如 Quotable / QuoteVerse）的运行时请求，
+ *      避免每次打开向第三方发请求导致隐私泄露，并保证无网环境 100% 可用。
  *
  * 永不重复：每条带唯一 id，已展示 id 存入本地“已读列表”，同日/次日跳过。
  * 每日更新：App 启动检测本地缓存日期，跨天自动换新句。
@@ -218,8 +214,7 @@
     return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
   }
   // 纯本地双语库（145 条精选）：离线可用、无第三方请求、隐私安全。
-  // 说明：旧版有 25% 概率调用 api.quotable.io 拉取新鲜英文句，但会带来隐私泄露（每次打开约 1/4 概率向第三方发请求）、
-  // 离线时的无意义网络尝试、以及第三方服务不稳导致的不确定性。本地库已足够丰富，故改为 100% 本地。
+  // 旧版曾以 25% 概率调用第三方语录 API，会带来隐私泄露、离线无意义的网络尝试及服务不稳的不确定性；本地库已足够丰富，故改为 100% 本地。
   async function getDailyQuote(force) {
     const key = todayKey();
     const date = localStorage.getItem(LS_DATE);
